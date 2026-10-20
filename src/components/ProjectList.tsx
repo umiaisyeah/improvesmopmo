@@ -175,13 +175,17 @@ export const ProjectList: React.FC<ProjectListProps> = ({
                       <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-bold ${
                         justek.status === 'DISETUJUI'
                           ? 'bg-emerald-100 text-emerald-800'
+                          : justek.status === 'PENGESAHAN_KADEP'
+                          ? 'bg-orange-100 text-orange-800 ring-1 ring-orange-400'
                           : justek.status === 'REVIEW_FINANSIAL'
                           ? 'bg-purple-100 text-purple-800'
                           : justek.status === 'REVIEW_TEKNIS'
                           ? 'bg-blue-100 text-blue-800'
+                          : justek.status === 'REVISI_DIBUTUHKAN'
+                          ? 'bg-red-100 text-red-800'
                           : 'bg-amber-100 text-amber-800'
                       }`}>
-                        {justek.status.replace(/_/g, ' ')}
+                        {justek.status === 'PENGESAHAN_KADEP' ? 'Pengesahan Kadep' : justek.status.replace(/_/g, ' ')}
                       </span>
                       <div className="text-[11px] text-slate-500 flex items-center lg:justify-end gap-1">
                         <Clock className="w-3.5 h-3.5" />

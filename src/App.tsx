@@ -119,15 +119,18 @@ export default function App() {
     setProjects(prev => prev.map(proj => {
       if (proj.id !== projectId || !proj.justifikasi) return proj;
 
-      const isCompleted = nextStage === 5;
+      const isCompleted = nextStage > 5;
       const newStatus = isCompleted ? 'DISETUJUI' : 
-                        nextStage === 3 ? 'REVIEW_TEKNIS' :
-                        nextStage === 4 ? 'REVIEW_FINANSIAL' : 'VERIFIKASI_BA';
+                        nextStage === 5 ? 'PENGESAHAN_KADEP' :
+                        nextStage === 4 ? 'REVIEW_FINANSIAL' :
+                        nextStage === 3 ? 'REVIEW_TEKNIS' : 'VERIFIKASI_BA';
 
       const newHistory = [
         ...proj.justifikasi.approvalHistory,
         {
-          step: `Tahap ${proj.justifikasi.currentApprovalStage} Disetujui`,
+          step: isCompleted 
+            ? 'Pengesahan Adendum Kontrak Resmi' 
+            : `Tahap ${proj.justifikasi.currentApprovalStage} Disetujui`,
           actor: userRole,
           role: userRole,
           date: new Date().toISOString().replace('T', ' ').substring(0, 16),
@@ -139,16 +142,52 @@ export default function App() {
       return {
         ...proj,
         status: isCompleted ? 'BERJALAN' : proj.status,
+        contractValue: isCompleted ? proj.justifikasi.financialSummary.revisedContractValue : proj.contractValue,
+        justificationDelta: proj.justifikasi.financialSummary.netVarianceValue,
         justifikasi: {
           ...proj.justifikasi,
-          currentApprovalStage: nextStage,
+          currentApprovalStage: Math.min(5, nextStage),
           status: newStatus,
-          approvalHistory: newHistory
+          approvalHistory: newHistory,
+          effectiveDate: isCompleted ? new Date().toISOString().split('T')[0] : proj.justifikasi.effectiveDate
         }
       };
     }));
 
     showToast(`Tahap persetujuan berhasil diperbarui oleh ${userRole}!`);
+  };
+
+  // Create new Justifikasi Teknis & Finansial
+  const handleCreateJustifikasi = (targetProjectId: string, newJustekData: any) => {
+    setProjects(prev => prev.map(proj => {
+      if (proj.id !== targetProjectId) return proj;
+
+      const { auditedItems, issues: newIssues } = auditJustifikasiEvidence(
+        proj.id,
+        proj.name,
+        newJustekData.items,
+        proj.beritaAcaraList,
+        proj.ipa
+      );
+
+      const completeJustek = {
+        ...newJustekData,
+        items: auditedItems
+      };
+
+      if (newIssues.length > 0) {
+        setIssues(prevIssues => [...newIssues, ...prevIssues]);
+      }
+
+      return {
+        ...proj,
+        status: 'MENUNGGU_JUSTIFIKASI',
+        justificationDelta: newJustekData.financialSummary.netVarianceValue,
+        justifikasi: completeJustek
+      };
+    }));
+
+    showToast(`Justifikasi No. ${newJustekData.numberJustek} berhasil diajukan.`);
   };
 
   // Request revision
@@ -378,7 +417,7 @@ export default function App() {
           preselectedProjectId={preselectedProjForCreate}
           onClose={() => setIsCreateModalOpen(false)}
           onCreateBeritaAcara={handleCreateBeritaAcara}
-          onCreateJustifikasi={() => {}}
+          onCreateJustifikasi={handleCreateJustifikasi}
         />
       )}
 

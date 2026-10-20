@@ -17,6 +17,7 @@ export type ApprovalStatus =
   | 'VERIFIKASI_BA'
   | 'REVIEW_TEKNIS'
   | 'REVIEW_FINANSIAL'
+  | 'PENGESAHAN_KADEP'
   | 'DISETUJUI'
   | 'REVISI_DIBUTUHKAN';
 

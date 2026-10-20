@@ -130,7 +130,8 @@ export function auditJustifikasiEvidence(
   projectId: string,
   projectName: string,
   items: BOQItem[],
-  beritaAcaraList: BeritaAcara[]
+  beritaAcaraList: BeritaAcara[],
+  projectIpa?: string
 ): {
   auditedItems: BOQItem[];
   issues: DiscrepancyReport[];
@@ -178,6 +179,10 @@ export function auditJustifikasiEvidence(
       return updated;
     }
 
+    const delta = item.fieldVolume - item.dedVolume;
+    const deltaStr = delta > 0 ? `+${delta.toFixed(1)}` : delta.toFixed(1);
+    const resolvedIpa = (projectIpa as any) || (beritaAcaraList[0]?.ipa) || 'IPA Buaran 1';
+
     if (!bestMatch || highestScore < 60) {
       updated.evidenceStatus = 'MISSING_BA';
       updated.similarityScore = highestScore;
@@ -185,12 +190,12 @@ export function auditJustifikasiEvidence(
         id: `ISSUE-${item.id}-NOBA`,
         projectId,
         projectName,
-        ipa: (beritaAcaraList[0]?.ipa) || 'IPA Buaran 1',
+        ipa: resolvedIpa,
         type: 'UNSUBSTANTIATED_JUSTEK',
         severity: 'HIGH',
         justekItemName: item.itemName,
         confidenceMatch: highestScore,
-        suggestedAction: `Item Justifikasi '${item.itemName}' mengalami perubahan volume (+${(item.fieldVolume - item.dedVolume).toFixed(1)} ${item.unit}) tetapi tidak ditemukan bukti Berita Acara pendukung (MC-0 atau Peninjauan Lapangan). Terbitkan BA Peninjauan Lapangan segera.`,
+        suggestedAction: `Item Justifikasi '${item.itemName}' mengalami perubahan volume (${deltaStr} ${item.unit}) tetapi tidak ditemukan bukti Berita Acara pendukung (MC-0 atau Peninjauan Lapangan). Terbitkan BA Peninjauan Lapangan segera.`,
         resolved: false
       });
       return updated;

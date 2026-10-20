@@ -19,7 +19,7 @@ import { IPA_LIST } from '../data/mockData';
 interface ExecutiveOverviewProps {
   projects: Project[];
   selectedIpa: IPALocation | 'ALL';
-  onSelectIpa: (ipa: IPALocation) => void;
+  onSelectIpa: (ipa: IPALocation | 'ALL') => void;
   onOpenProjectDetail: (projectId: string) => void;
   onOpenVerificationTab: () => void;
   unresolvedIssueCount: number;
@@ -183,10 +183,10 @@ export const ExecutiveOverview: React.FC<ExecutiveOverviewProps> = ({
           </div>
           {selectedIpa !== 'ALL' && (
             <button
-              onClick={() => onSelectIpa('IPA Buaran 1')} // or click reset
-              className="text-xs text-blue-700 hover:underline font-semibold"
+              onClick={() => onSelectIpa('ALL')}
+              className="text-xs text-blue-700 hover:underline font-semibold cursor-pointer"
             >
-              Tampilkan Semua IPA
+              &larr; Tampilkan Semua 6 IPA
             </button>
           )}
         </div>
@@ -333,13 +333,17 @@ export const ExecutiveOverview: React.FC<ExecutiveOverviewProps> = ({
                           <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold ${
                             justek.status === 'DISETUJUI'
                               ? 'bg-emerald-100 text-emerald-800'
+                              : justek.status === 'PENGESAHAN_KADEP'
+                              ? 'bg-orange-100 text-orange-800 ring-1 ring-orange-400'
                               : justek.status === 'REVIEW_FINANSIAL'
                               ? 'bg-purple-100 text-purple-800'
                               : justek.status === 'REVIEW_TEKNIS'
                               ? 'bg-blue-100 text-blue-800'
+                              : justek.status === 'REVISI_DIBUTUHKAN'
+                              ? 'bg-red-100 text-red-800'
                               : 'bg-amber-100 text-amber-800'
                           }`}>
-                            {justek.status.replace(/_/g, ' ')}
+                            {justek.status === 'PENGESAHAN_KADEP' ? 'Pengesahan Kadep' : justek.status.replace(/_/g, ' ')}
                           </span>
                           <div className="text-[10px] text-slate-500 flex items-center gap-1">
                             <Clock className="w-3 h-3" />

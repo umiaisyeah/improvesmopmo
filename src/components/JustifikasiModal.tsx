@@ -65,8 +65,12 @@ export const JustifikasiModal: React.FC<JustifikasiModalProps> = ({
   };
 
   const handleApprove = () => {
-    const nextStage = Math.min(5, justek.currentApprovalStage + 1);
-    const defaultNote = approvalNote || `Disetujui oleh ${userRole} pada ${new Date().toLocaleDateString('id-ID')}`;
+    const nextStage = justek.currentApprovalStage + 1;
+    const defaultNote = approvalNote || (
+      justek.currentApprovalStage === 5
+        ? `Adendum Kontrak disahkan secara resmi oleh Kepala Departemen PMO pada ${new Date().toLocaleDateString('id-ID')}`
+        : `Disetujui oleh ${userRole} pada ${new Date().toLocaleDateString('id-ID')}`
+    );
     onAdvanceApproval(project.id, nextStage, defaultNote);
     setApprovalNote('');
   };
@@ -487,7 +491,11 @@ export const JustifikasiModal: React.FC<JustifikasiModalProps> = ({
                   className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-bold shadow-xs flex items-center gap-1.5 transition-colors cursor-pointer"
                 >
                   <Check className="w-4 h-4" />
-                  <span>Setujui Tahap Ini ({steps.find(s => s.num === justek.currentApprovalStage)?.title})</span>
+                  <span>
+                    {justek.currentApprovalStage === 5 
+                      ? 'Sahkan & Terbitkan Adendum Kontrak (Kadep PMO)' 
+                      : `Setujui Tahap Ini (${steps.find(s => s.num === justek.currentApprovalStage)?.title})`}
+                  </span>
                 </button>
               </>
             ) : justek.status === 'DISETUJUI' ? (
