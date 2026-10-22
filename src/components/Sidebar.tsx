@@ -26,7 +26,7 @@ import {
   Home,
 } from 'lucide-react';
 import { DocumentPackage, VerificationResult } from '../types';
-import { CompanyLogo } from './CompanyLogo';
+import { DashboardLogo } from './DashboardLogo';
 
 export type TabType =
   | 'welcome'
@@ -308,21 +308,21 @@ export const Sidebar: React.FC<SidebarProps> = ({
           {!isCollapsed ? (
             <div className="flex items-center gap-2 min-w-0">
               <div className="bg-white/95 rounded-lg p-1 shrink-0">
-                <CompanyLogo className="h-6 w-auto" />
+                <DashboardLogo size="sm" showText={false} animated={true} className="h-6 w-auto" />
               </div>
               <div className="min-w-0">
                 <div className="text-xs font-extrabold text-white tracking-tight truncate flex items-center gap-1.5">
-                  <span>PMO CYCLICAL</span>
+                  <span>PRIMA</span>
                   <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />
                 </div>
                 <div className="text-[10px] text-cyan-300 truncate">
-                  PT Air Bersih Jakarta
+                  Project Records, Intelligence, Monitoring and Assurance
                 </div>
               </div>
             </div>
           ) : (
             <div className="mx-auto bg-white/95 rounded-lg p-1">
-              <CompanyLogo className="h-5 w-auto" />
+              <DashboardLogo size="sm" showText={false} animated={true} className="h-5 w-auto" />
             </div>
           )}
 
@@ -435,21 +435,21 @@ export const Sidebar: React.FC<SidebarProps> = ({
           {!isCollapsed ? (
             <div className="flex items-center gap-2 overflow-hidden">
               <div className="w-7 h-7 rounded-full bg-gradient-to-tr from-[#0054a6] to-[#009ee2] flex items-center justify-center text-white font-bold text-[10px] shrink-0">
-                PMO
+                PRIMA
               </div>
               <div className="min-w-0">
                 <div className="text-[11px] font-bold text-white truncate">
                   Reviewer Teknis &amp; Finansial
                 </div>
                 <div className="text-[10px] text-cyan-300 truncate">
-                  PMO Cyclical &bull; Aktif
+                  PRIMA &bull; Aktif
                 </div>
               </div>
             </div>
           ) : (
             <div className="mx-auto">
               <div className="w-6 h-6 rounded-full bg-gradient-to-tr from-[#0054a6] to-[#009ee2] flex items-center justify-center text-white font-bold text-[9px]">
-                PMO
+                PRIMA
               </div>
             </div>
           )}

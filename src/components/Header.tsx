@@ -45,11 +45,11 @@ export const Header: React.FC<HeaderProps> = ({
       className="bg-gradient-to-r from-[#002b5b] via-[#0054a6] to-[#f59e0b] dark:from-[#041527] dark:via-[#07264a] dark:to-[#92400e] text-white shadow-md sticky top-0 z-50 transition-colors"
     >
       {/* Running Text Marquee Banner */}
-      <div className="bg-amber-400 text-slate-950 font-extrabold text-[11px] py-1 px-3 overflow-hidden whitespace-nowrap shadow-xs flex items-center border-b border-amber-500/30">
-        <span className="bg-slate-950 text-amber-300 px-2 py-0.5 rounded text-[9px] font-mono mr-2 shrink-0 animate-pulse">
-          PMO INFO 🚀
+      <div className="bg-gradient-to-r from-blue-700 via-sky-600 to-amber-500 text-white font-extrabold text-[11px] py-1 px-3 overflow-hidden whitespace-nowrap shadow-xs flex items-center border-b border-white/20">
+        <span className="bg-black/20 text-white px-2 py-0.5 rounded text-[9px] font-mono mr-2 shrink-0 animate-pulse">
+          PRIMA INFO 🚀
         </span>
-        {React.createElement('marquee' as any, { scrollamount: "5", className: "font-bold tracking-wide" }, "✨ Selamat datang di Pusat Verifikasi Pintar PMO Cyclical PT Air Bersih Jakarta! Pastikan dokumen JusTek, JusFin, MC-0, Peninjauan Lapangan, RNA, BOQ, BOM, &amp; Commissioning Test Sinkron Anti Selisih! Kerja Cerdas, Air Bersih Tuntas, PMO Mantap! 💧🚀")}
+        {React.createElement('marquee' as any, { scrollamount: "5", className: "font-bold tracking-wide" }, "✨ Selamat datang di PRIMA - Project Records, Intelligence, Monitoring and Assurance. Sistem Verifikasi Pintar PMO Cyclical PT Air Bersih Jakarta! Pastikan dokumen Sinkron Anti Selisih! Kerja Cerdas, Air Bersih Tuntas, PRIMA Mantap! 💧🚀")}
       </div>
 
       <div className="w-full px-3 sm:px-5">

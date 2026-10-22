@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { motion } from 'motion/react';
 import {
   LayoutDashboard,
   FileCheck,
@@ -769,65 +770,72 @@ export default function App() {
                   </div>
 
                   {/* Active View Component */}
-                  {activeTab === 'program_database' && (
-                    <ProgramDatabaseView
-                      packages={packages}
-                      activePackageId={activePackageId}
-                      onSelectPackage={(id) => {
-                        setActivePackageId(id);
-                        setActiveTab('dashboard');
-                      }}
-                      onOpenUpload={() => setShowUpload(true)}
-                      onDeletePackage={handleDeletePackage}
-                    />
-                  )}
+                  <motion.div
+                    key={activeTab}
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ duration: 0.3 }}
+                  >
+                    {activeTab === 'program_database' && (
+                      <ProgramDatabaseView
+                        packages={packages}
+                        activePackageId={activePackageId}
+                        onSelectPackage={(id) => {
+                          setActivePackageId(id);
+                          setActiveTab('dashboard');
+                        }}
+                        onOpenUpload={() => setShowUpload(true)}
+                        onDeletePackage={handleDeletePackage}
+                      />
+                    )}
 
-                  {activeTab === 'dashboard' && (
-                    <DashboardView
-                      result={result}
-                      onSelectTab={(tab) => setActiveTab(tab as TabType)}
-                      onDeleteCurrentPackage={
-                        activePackage ? () => setPackageToDelete(activePackage) : undefined
-                      }
-                    />
-                  )}
+                    {activeTab === 'dashboard' && (
+                      <DashboardView
+                        result={result}
+                        onSelectTab={(tab) => setActiveTab(tab as TabType)}
+                        onDeleteCurrentPackage={
+                          activePackage ? () => setPackageToDelete(activePackage) : undefined
+                        }
+                      />
+                    )}
 
-                  {activeTab === 'technical' && (
-                    <TechnicalVerificationView changes={result.changes} />
-                  )}
+                    {activeTab === 'technical' && (
+                      <TechnicalVerificationView changes={result.changes} />
+                    )}
 
-                  {activeTab === 'financial' && (
-                    <FinancialVerificationView
-                      totalRab={result.total_rab}
-                      items={result.financial_items}
-                      technicalChanges={result.changes}
-                    />
-                  )}
+                    {activeTab === 'financial' && (
+                      <FinancialVerificationView
+                        totalRab={result.total_rab}
+                        items={result.financial_items}
+                        technicalChanges={result.changes}
+                      />
+                    )}
 
-                  {activeTab === 'traceability' && (
-                    <TraceabilityView records={result.traceability} />
-                  )}
+                    {activeTab === 'traceability' && (
+                      <TraceabilityView records={result.traceability} />
+                    )}
 
-                  {activeTab === 'evidence' && (
-                    <EvidenceView
-                      evidences={result.evidences}
-                      onViewRawBapl={(page) => {
-                        setSelectedRawBaplPage(page);
-                        setActiveTab('raw_bapl');
-                      }}
-                    />
-                  )}
+                    {activeTab === 'evidence' && (
+                      <EvidenceView
+                        evidences={result.evidences}
+                        onViewRawBapl={(page) => {
+                          setSelectedRawBaplPage(page);
+                          setActiveTab('raw_bapl');
+                        }}
+                      />
+                    )}
 
-                  {activeTab === 'exceptions' && (
-                    <ExceptionsView exceptions={result.exceptions} />
-                  )}
+                    {activeTab === 'exceptions' && (
+                      <ExceptionsView exceptions={result.exceptions} />
+                    )}
 
-                  {activeTab === 'raw_bapl' && (
-                    <RawBaplView
-                      pages={result.raw_bapl}
-                      initialPage={selectedRawBaplPage}
-                    />
-                  )}
+                    {activeTab === 'raw_bapl' && (
+                      <RawBaplView
+                        pages={result.raw_bapl}
+                        initialPage={selectedRawBaplPage}
+                      />
+                    )}
+                  </motion.div>
                 </div>
               )}
             </div>

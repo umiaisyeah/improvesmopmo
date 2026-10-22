@@ -422,5 +422,5 @@ export interface UploadedFile {
 }
 
 // Re-export domain types for water project, Berita Acara, and justification components
-export * from './types/index';
+
 

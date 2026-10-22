@@ -210,16 +210,14 @@ export const DashboardLogo: React.FC<DashboardLogoProps> = ({
         <div className="mt-4 text-center">
           <div className="flex items-center justify-center gap-2">
             <span className="text-xl sm:text-2xl font-black tracking-wider text-slate-900 dark:text-white uppercase font-sans">
-              PMO <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#0054a6] to-[#00a3e0] dark:from-[#38bdf8] dark:to-[#00a3e0]">CYCLICAL</span>
+              PRIMA
             </span>
             <span className="px-2 py-0.5 rounded-full text-[10px] font-extrabold uppercase tracking-widest bg-sky-100 text-[#0054a6] border border-sky-200 dark:bg-sky-950/80 dark:text-sky-300 dark:border-sky-800">
               VERIFIED
             </span>
           </div>
           <div className="flex items-center justify-center gap-1.5 mt-1 text-xs font-semibold tracking-wider text-slate-500 dark:text-slate-400 uppercase">
-            <span>PT AIR BERSIH JAKARTA</span>
-            <span>&bull;</span>
-            <span className="text-sky-600 dark:text-sky-400 font-bold">SYSTEM VERIFIKASI</span>
+            <span>Project Records, Intelligence, Monitoring and Assurance</span>
           </div>
         </div>
       )}

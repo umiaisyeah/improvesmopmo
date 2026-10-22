@@ -203,10 +203,20 @@ export const ProgramDatabaseView: React.FC<ProgramDatabaseViewProps> = ({
         })}
 
         {filteredPackages.length === 0 && (
-          <div className="col-span-full py-12 text-center bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800">
-            <Database className="w-10 h-10 text-slate-300 mx-auto mb-2" />
-            <h4 className="text-sm font-bold text-slate-700 dark:text-slate-200">Tidak ada program yang ditemukan</h4>
-            <p className="text-xs text-slate-400 mt-1">Coba kata kunci pencarian lain atau unggah dokumen baru.</p>
+          <div className="col-span-full py-16 text-center bg-white dark:bg-slate-900 rounded-3xl border-2 border-dashed border-slate-300 dark:border-slate-700 p-8">
+            <Database className="w-16 h-16 text-slate-300 dark:text-slate-600 mx-auto mb-4" />
+            <h4 className="text-lg font-black text-slate-700 dark:text-slate-200">Database PRIMA Masih Kosong</h4>
+            <p className="text-sm text-slate-500 dark:text-slate-400 mt-2 max-w-sm mx-auto">
+              Belum ada program atau dokumen yang diunggah ke dalam database. Mulailah dengan mengunggah pasangan dokumen proyek baru untuk mengisi database PRIMA.
+            </p>
+            <button
+              type="button"
+              onClick={onOpenUpload}
+              className="mt-6 px-6 py-3 rounded-2xl bg-[#0054a6] hover:bg-[#004690] text-white font-bold text-sm shadow-lg flex items-center gap-2 mx-auto transition-all cursor-pointer hover:scale-105"
+            >
+              <Plus className="w-4 h-4" />
+              <span>Unggah Dokumen Pertama</span>
+            </button>
           </div>
         )}
       </div>
