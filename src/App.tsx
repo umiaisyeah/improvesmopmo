@@ -54,6 +54,7 @@ import { ResetModal } from './components/ResetModal';
 import { DeletePackageModal } from './components/DeletePackageModal';
 import { Sidebar, TabType } from './components/Sidebar';
 import { WelcomeView } from './components/WelcomeView';
+import { ProgramDatabaseView } from './components/ProgramDatabaseView';
 
 const INITIAL_PACKAGE: DocumentPackage = {
   id: 'pkg-46223A',
@@ -147,14 +148,8 @@ export default function App() {
     }
   }, [activePackageId]);
 
-  // Dedicated pre-dashboard entry state: Welcome page is shown before entering dashboard
-  const [hasEnteredDashboard, setHasEnteredDashboard] = useState<boolean>(() => {
-    try {
-      return sessionStorage.getItem('pmo_has_entered_dashboard') === 'true';
-    } catch {
-      return false;
-    }
-  });
+  // Dedicated pre-dashboard entry state: Welcome page is shown first when link is opened
+  const [hasEnteredDashboard, setHasEnteredDashboard] = useState<boolean>(false);
 
   // Dark / Light Mode State
   const [isDarkMode, setIsDarkMode] = useState<boolean>(() => {
@@ -774,6 +769,19 @@ export default function App() {
                   </div>
 
                   {/* Active View Component */}
+                  {activeTab === 'program_database' && (
+                    <ProgramDatabaseView
+                      packages={packages}
+                      activePackageId={activePackageId}
+                      onSelectPackage={(id) => {
+                        setActivePackageId(id);
+                        setActiveTab('dashboard');
+                      }}
+                      onOpenUpload={() => setShowUpload(true)}
+                      onDeletePackage={handleDeletePackage}
+                    />
+                  )}
+
                   {activeTab === 'dashboard' && (
                     <DashboardView
                       result={result}

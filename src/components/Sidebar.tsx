@@ -31,6 +31,7 @@ import { CompanyLogo } from './CompanyLogo';
 export type TabType =
   | 'welcome'
   | 'dashboard'
+  | 'program_database'
   | 'technical'
   | 'financial'
   | 'traceability'
@@ -69,6 +70,14 @@ const NAV_ITEMS: NavItem[] = [
       if (!res) return null;
       return { text: 'Overview', variant: 'default' };
     },
+  },
+  {
+    id: 'program_database',
+    label: 'Database Program',
+    shortLabel: 'Database',
+    icon: Layers,
+    group: 'main',
+    getBadge: () => ({ text: 'Arsip', variant: 'info' }),
   },
   {
     id: 'technical',
@@ -341,120 +350,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
           </button>
         </div>
 
-        {/* Project Package Selector */}
-        {!isCollapsed ? (
-          <div className="p-3 border-b border-[#0e355c]/80 bg-slate-900/40 shrink-0">
-            <div className="text-[10px] font-bold uppercase tracking-wider text-cyan-300 mb-1 flex items-center justify-between">
-              <span className="flex items-center gap-1">
-                <Layers className="w-3 h-3 text-cyan-400" />
-                <span>Paket Dokumen Aktif</span>
-              </span>
-              <span className="text-[9px] text-slate-400">{packages.length} Paket</span>
-            </div>
 
-            <div className="relative">
-              <button
-                type="button"
-                onClick={() => setShowPackageDropdown(!showPackageDropdown)}
-                className="w-full flex items-center justify-between gap-2 p-2 rounded-xl bg-slate-900/90 hover:bg-slate-900 border border-[#0e355c] text-left transition-all cursor-pointer group"
-              >
-                <div className="min-w-0 flex-1">
-                  <div className="flex items-center gap-1.5 mb-0.5">
-                    <span className="font-mono text-[10px] font-bold text-cyan-300 bg-cyan-950 px-1.5 py-0.2 rounded border border-cyan-800/60">
-                      {activePackage?.projectCode || 'PROYEK'}
-                    </span>
-                    <span className="text-[10px] font-semibold text-slate-300 truncate">
-                      {activePackage?.title?.split(':')[0] || 'Program 1'}
-                    </span>
-                  </div>
-                  <div className="text-[11px] font-bold text-white truncate group-hover:text-cyan-200 transition-colors">
-                    {activePackage?.projectName || 'Nama Proyek'}
-                  </div>
-                </div>
-                <ChevronDown
-                  className={`w-3.5 h-3.5 text-slate-400 shrink-0 transition-transform ${
-                    showPackageDropdown ? 'rotate-180' : ''
-                  }`}
-                />
-              </button>
-
-              {/* Package Dropdown Menu */}
-              {showPackageDropdown && (
-                <div className="absolute top-full left-0 right-0 mt-1.5 bg-[#071f3b] border border-[#0e355c] rounded-xl shadow-2xl p-1 z-30 space-y-1 backdrop-blur-md animate-in fade-in duration-150">
-                  <div className="max-h-48 overflow-y-auto space-y-1 pr-0.5">
-                    {packages.map((pkg, idx) => {
-                      const isSelected = pkg.id === activePackageId;
-                      const hasDiff = !pkg.result?.total_rab?.delta_match;
-                      return (
-                        <button
-                          key={pkg.id}
-                          type="button"
-                          onClick={() => {
-                            onSelectPackage(pkg.id);
-                            setShowPackageDropdown(false);
-                          }}
-                          className={`w-full text-left p-2 rounded-lg text-xs transition-colors flex items-center justify-between gap-2 cursor-pointer ${
-                            isSelected
-                              ? 'bg-[#0054a6] text-white font-bold'
-                              : 'text-slate-300 hover:bg-slate-800/80 hover:text-white'
-                          }`}
-                        >
-                          <div className="min-w-0">
-                            <div className="flex items-center gap-1.5">
-                              <span className="font-mono text-[10px] font-bold opacity-80">
-                                {pkg.projectCode}
-                              </span>
-                              <span className="text-[10px] opacity-70">
-                                #{idx + 1}
-                              </span>
-                            </div>
-                            <div className="truncate text-[11px]">
-                              {pkg.projectName}
-                            </div>
-                          </div>
-                          {hasDiff ? (
-                            <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-rose-500/20 text-rose-300 border border-rose-500/40 shrink-0">
-                              Selisih
-                            </span>
-                          ) : (
-                            <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 shrink-0">
-                              OK
-                            </span>
-                          )}
-                        </button>
-                      );
-                    })}
-                  </div>
-
-                  <div className="pt-1 border-t border-[#0e355c]/60">
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setShowPackageDropdown(false);
-                        onAddNewPackage();
-                      }}
-                      className="w-full flex items-center justify-center gap-1.5 p-1.5 rounded-lg text-xs font-bold text-cyan-300 hover:text-white hover:bg-slate-800 transition-colors cursor-pointer"
-                    >
-                      <Plus className="w-3.5 h-3.5" />
-                      <span>Unggah Pasangan Baru</span>
-                    </button>
-                  </div>
-                </div>
-              )}
-            </div>
-          </div>
-        ) : (
-          <div className="p-2 border-b border-[#0e355c]/80 flex justify-center shrink-0">
-            <button
-              type="button"
-              onClick={onToggleCollapse}
-              title={`Paket Aktif: ${activePackage?.projectCode}`}
-              className="w-10 h-10 rounded-xl bg-slate-900 border border-[#0e355c] flex items-center justify-center text-cyan-300 font-mono text-xs font-bold hover:bg-slate-800 transition-colors"
-            >
-              {activePackage?.projectCode?.slice(0, 3) || 'PMO'}
-            </button>
-          </div>
-        )}
 
         {/* Scrollable Nav Item Groups */}
         <div className="flex-1 overflow-y-auto px-2 py-3 space-y-4">

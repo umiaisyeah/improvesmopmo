@@ -21,7 +21,7 @@
         "./*"
       ]
     },
-    "allowImportingTsExtensions": true,
+    "allowImportingTsExtensions": false,
     "noEmit": true
   }
 }
