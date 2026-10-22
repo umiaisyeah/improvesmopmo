@@ -27,6 +27,51 @@ export type UserRole =
   | 'Financial & Commercial PMO'
   | 'Kepala Departemen PMO';
 
+export interface TigresRef {
+  folderPath?: string;
+  url?: string;
+  docNumber?: string;
+}
+
+export interface ProposalApprovalParty {
+  party: 'SUCOFINDO' | 'PAMJAYA';
+  status: 'PENDING' | 'APPROVED' | 'REJECTED';
+  decidedBy?: string;
+  decidedAt?: string;
+  note?: string;
+  tigresRef?: TigresRef;
+}
+
+export interface ProposalModifikasi {
+  id: string;
+  projectId: string;
+  projectCode: string;
+  projectName: string;
+  ipa: IPALocation;
+  proposalNumber: string;
+  triggerDeviationPct: number;
+  netVarianceValue: number;
+  thresholdPct: number;
+  summary: string;
+  status: 'DRAFT' | 'DIAJUKAN' | 'DISETUJUI' | 'DITOLAK';
+  tigresRef?: TigresRef;
+  approvals: ProposalApprovalParty[];
+  createdAt: string;
+}
+
+export interface GateChecklistItem {
+  id: string;
+  taskName: string;
+  isCompleted: boolean;
+  checkedBy?: string;
+  checkedAt?: string;
+}
+
+export interface ProjectGate {
+  projectId: string;
+  items: GateChecklistItem[];
+}
+
 export interface BOQItem {
   id: string;
   wbsCode: string; // e.g., "CIV-01", "PIP-04"
@@ -67,7 +112,7 @@ export interface BeritaAcaraItem {
 export interface DigitalSignatory {
   role: string;
   name: string;
-  institution: string; // e.g., 'PT Air Bersih Jakarta (PMO)', 'PT Wijaya Konstruksi (Kontraktor)', 'PT Virama Karya (Pengawas)'
+  institution: string; // e.g., 'PT Air Bersih Jakarta (PMO)', 'PT Wijaya Konstruksi (Kontraktor)', 'PT Sucofindo (Persero) (Pengawas)'
   signedAt?: string;
   isSigned: boolean;
   signatureHash?: string;
@@ -95,6 +140,7 @@ export interface BeritaAcara {
     pressureBar?: number;
     flowRateLPS?: number;
   };
+  tigresRef?: TigresRef;
 }
 
 export interface ApprovalHistory {
@@ -139,7 +185,10 @@ export interface JustifikasiDocument {
   items: BOQItem[];
   approvalHistory: ApprovalHistory[];
   currentApprovalStage: number; // 1 to 5
+  tigresRef?: TigresRef;
 }
+
+export type ProjectStatus = 'BERJALAN' | 'MENUNGGU_JUSTIFIKASI' | 'KRITIS' | 'SELESAI' | 'STOP_WORK';
 
 export interface Project {
   id: string;
@@ -162,7 +211,7 @@ export interface Project {
   progressPhysicalPlanned: number;
   progressPhysicalActual: number;
   progressDeviation: number; // actual - planned
-  status: 'BERJALAN' | 'MENUNGGU_JUSTIFIKASI' | 'KRITIS' | 'SELESAI';
+  status: ProjectStatus;
   
   // Relations
   justifikasi?: JustifikasiDocument;
