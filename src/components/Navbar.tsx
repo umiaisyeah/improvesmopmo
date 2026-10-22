@@ -44,7 +44,7 @@ export const Navbar: React.FC<NavbarProps> = ({
             PT AIR BERSIH JAKARTA
           </span>
           <span className="text-slate-500">|</span>
-          <span className="text-slate-300 font-normal">Departemen PMO Cyclical &bull; Divisi Pengendalian Proyek & Konstruksi IPA</span>
+          <span className="text-slate-300 font-normal">Departemen PMO Cyclical</span>
         </div>
         <div className="flex items-center space-x-4 mt-1 sm:mt-0">
           <div className="flex items-center gap-1.5 text-slate-300">

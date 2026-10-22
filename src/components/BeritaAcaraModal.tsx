@@ -98,7 +98,7 @@ export const BeritaAcaraModal: React.FC<BeritaAcaraModalProps> = ({
                   PT AIR BERSIH JAKARTA
                 </h1>
                 <h2 className="text-xs font-semibold text-slate-700 font-sans tracking-wide">
-                  DEPARTEMEN PMO CYCLICAL &bull; DIVISI PENGENDALIAN KONSTRUKSI IPA
+                  DEPARTEMEN PMO CYCLICAL &bull; PENGENDALIAN KONSTRUKSI IPA
                 </h2>
                 <p className="text-[10px] text-slate-500 font-sans">
                   Gedung Tirta Lt. 4, Jl. Penjernihan II, Jakarta Pusat &bull; Telp: (021) 570-9800 &bull; pmo@airbersihjakarta.id

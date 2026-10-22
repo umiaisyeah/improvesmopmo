@@ -34,7 +34,6 @@ interface UploadSectionProps {
     supportingFiles: File[],
     packageName?: string
   ) => void;
-  onLoadGoldenCase: () => void;
   isProcessing: boolean;
   onClose?: () => void;
   existingPackageCount?: number;
@@ -42,7 +41,6 @@ interface UploadSectionProps {
 
 export const UploadSection: React.FC<UploadSectionProps> = ({
   onRunVerification,
-  onLoadGoldenCase,
   isProcessing,
   onClose,
   existingPackageCount = 1,
@@ -149,17 +147,6 @@ export const UploadSection: React.FC<UploadSectionProps> = ({
           </div>
 
           <div className="flex items-center gap-2">
-            <button
-              id="btn-quick-golden"
-              type="button"
-              onClick={onLoadGoldenCase}
-              disabled={isProcessing}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold text-amber-900 bg-amber-100 hover:bg-amber-200 border border-amber-300 transition-colors shadow-2xs cursor-pointer"
-            >
-              <Sparkles className="w-3.5 h-3.5 text-amber-600" />
-              <span>Gunakan Data Test 46223A</span>
-            </button>
-
             {onClose && (
               <button
                 type="button"
@@ -769,7 +756,7 @@ export const UploadSection: React.FC<UploadSectionProps> = ({
               type="button"
               onClick={handleRun}
               disabled={isProcessing}
-              className="inline-flex items-center justify-center gap-2 px-6 py-3.5 rounded-xl text-xs font-bold text-white bg-blue-600 hover:bg-blue-700 active:scale-98 shadow-sm transition-all disabled:opacity-50 whitespace-nowrap cursor-pointer"
+              className="inline-flex items-center justify-center gap-2 px-6 py-3.5 rounded-xl text-xs font-extrabold text-white bg-gradient-to-r from-[#0054a6] via-[#0080c8] to-amber-500 hover:from-[#004690] hover:to-amber-600 active:scale-98 shadow-md transition-all disabled:opacity-50 whitespace-nowrap cursor-pointer ring-2 ring-amber-400/30"
             >
               <span>Kaji &amp; Verifikasi Menyeluruh Pasangan Dokumen</span>
               <ArrowRight className="w-4 h-4" />

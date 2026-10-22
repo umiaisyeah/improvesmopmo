@@ -13,7 +13,7 @@ import {
   UploadCloud,
   RotateCcw,
   CheckCircle2,
-  Cloud,
+  Home,
 } from 'lucide-react';
 import {
   VerificationResult,
@@ -52,18 +52,8 @@ import { ConfigModal } from './components/ConfigModal';
 import { DocumentPackageBar } from './components/DocumentPackageBar';
 import { ResetModal } from './components/ResetModal';
 import { DeletePackageModal } from './components/DeletePackageModal';
-import { GoogleDriveModal } from './components/GoogleDriveModal';
-import { User } from 'firebase/auth';
-import { initAuth, googleSignIn, googleSignOut } from './services/googleDriveAuth';
-
-type TabType =
-  | 'dashboard'
-  | 'technical'
-  | 'financial'
-  | 'traceability'
-  | 'evidence'
-  | 'exceptions'
-  | 'raw_bapl';
+import { Sidebar, TabType } from './components/Sidebar';
+import { WelcomeView } from './components/WelcomeView';
 
 const INITIAL_PACKAGE: DocumentPackage = {
   id: 'pkg-46223A',
@@ -106,54 +96,41 @@ export default function App() {
   const [activePackageId, setActivePackageId] = useState<string>(() => {
     try {
       const savedActive = localStorage.getItem('bapl_active_package_id');
-      if (savedActive) {
-        return savedActive;
-      }
-      const saved = localStorage.getItem(STORAGE_KEY);
-      if (saved !== null) {
-        const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed) && parsed.length > 0) {
-          return parsed[parsed.length - 1].id;
-        }
-      }
-    } catch (e) {}
-    return DEFAULT_PAKET_2.id;
+      if (savedActive) return savedActive;
+    } catch (e) {
+      // ignore
+    }
+    return 'pkg-46223A';
   });
 
-  const isStorageReady = useRef(false);
   const [importNotification, setImportNotification] = useState<string | null>(null);
+  const isStorageReady = useRef<boolean>(false);
 
-  // Load authoritative full package data from high-capacity IndexedDB on mount
+  // High-capacity indexed/local storage loader
   useEffect(() => {
-    let isMounted = true;
-    loadAllStoredPackages().then((stored) => {
-      if (!isMounted) return;
-      if (stored !== null) {
-        // High capacity IndexedDB packages retrieved - ensures no user package is ever truncated
-        setPackages(stored);
-        isStorageReady.current = true;
-        if (stored.length > 0) {
-          getStoredActivePackageId().then((storedActiveId) => {
-            if (!isMounted) return;
-            if (storedActiveId && stored.some((p) => p.id === storedActiveId)) {
-              setActivePackageId(storedActiveId);
-            } else {
-              setActivePackageId(stored[stored.length - 1].id);
-            }
-          });
+    async function initStorage() {
+      try {
+        const stored = await loadAllStoredPackages();
+        if (stored && stored.length > 0) {
+          setPackages(stored);
+          const savedActive = await getStoredActivePackageId();
+          if (savedActive && stored.some((p) => p.id === savedActive)) {
+            setActivePackageId(savedActive);
+          } else {
+            setActivePackageId(stored[0].id);
+          }
         } else {
-          setActivePackageId('');
+          // Seed initial defaults into persistent storage
+          await persistAllPackages([INITIAL_PACKAGE, DEFAULT_PAKET_2]);
+          await persistActivePackageId(INITIAL_PACKAGE.id);
         }
-      } else {
-        // Clean install on new browser: persist default starter packages into IndexedDB
-        persistAllPackages([INITIAL_PACKAGE, DEFAULT_PAKET_2]);
+      } catch (err) {
+        console.error('Failed to initialize storage:', err);
+      } finally {
         isStorageReady.current = true;
       }
-    });
-
-    return () => {
-      isMounted = false;
-    };
+    }
+    initStorage();
   }, []);
 
   // Sync to high-capacity storage whenever packages state changes
@@ -169,7 +146,65 @@ export default function App() {
       persistActivePackageId(activePackageId);
     }
   }, [activePackageId]);
+
+  // Dedicated pre-dashboard entry state: Welcome page is shown before entering dashboard
+  const [hasEnteredDashboard, setHasEnteredDashboard] = useState<boolean>(() => {
+    try {
+      return sessionStorage.getItem('pmo_has_entered_dashboard') === 'true';
+    } catch {
+      return false;
+    }
+  });
+
+  // Dark / Light Mode State
+  const [isDarkMode, setIsDarkMode] = useState<boolean>(() => {
+    try {
+      const saved = localStorage.getItem('pmo_theme');
+      if (saved) return saved === 'dark';
+      return window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+    } catch {
+      return false;
+    }
+  });
+
+  useEffect(() => {
+    const root = document.documentElement;
+    if (isDarkMode) {
+      root.classList.add('dark');
+      try {
+        localStorage.setItem('pmo_theme', 'dark');
+      } catch {}
+    } else {
+      root.classList.remove('dark');
+      try {
+        localStorage.setItem('pmo_theme', 'light');
+      } catch {}
+    }
+  }, [isDarkMode]);
+
+  const handleToggleDarkMode = () => {
+    setIsDarkMode((prev) => !prev);
+  };
+
+  const handleEnterDashboard = () => {
+    setHasEnteredDashboard(true);
+    setActiveTab('dashboard');
+    try {
+      sessionStorage.setItem('pmo_has_entered_dashboard', 'true');
+    } catch {}
+  };
+
+  const handleNavigateWelcome = () => {
+    setHasEnteredDashboard(false);
+    try {
+      sessionStorage.setItem('pmo_has_entered_dashboard', 'false');
+    } catch {}
+  };
+
+  // Default active view inside the dashboard
   const [activeTab, setActiveTab] = useState<TabType>('dashboard');
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState<boolean>(false);
+  const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState<boolean>(false);
   const [selectedRawBaplPage, setSelectedRawBaplPage] = useState<number>(1);
   const [showUpload, setShowUpload] = useState<boolean>(false);
   const [showConfig, setShowConfig] = useState<boolean>(false);
@@ -179,25 +214,28 @@ export default function App() {
   const [config, setConfig] = useState<SystemConfig>(DEFAULT_CONFIG);
   const [pipelineError, setPipelineError] = useState<string | null>(null);
 
-  // Google Drive Integration State
-  const [googleUser, setGoogleUser] = useState<User | null>(null);
-  const [googleAccessToken, setGoogleAccessToken] = useState<string | null>(null);
-  const [showGoogleDriveModal, setShowGoogleDriveModal] = useState<boolean>(false);
-
-  // Listen to Google OAuth state
-  useEffect(() => {
-    const unsubscribe = initAuth(
-      (user, token) => {
-        setGoogleUser(user);
-        setGoogleAccessToken(token);
-      },
-      () => {
-        setGoogleUser(null);
-        setGoogleAccessToken(null);
-      }
-    );
-    return () => unsubscribe();
-  }, []);
+  const getActiveTabLabel = (tab: TabType): string => {
+    switch (tab) {
+      case 'welcome':
+        return 'Laman Selamat Datang';
+      case 'dashboard':
+        return 'Dashboard Executive';
+      case 'technical':
+        return 'Verifikasi Teknis (JusTek)';
+      case 'financial':
+        return 'Verifikasi Finansial (JusFin & RAB)';
+      case 'traceability':
+        return 'Matriks Traceability';
+      case 'evidence':
+        return 'Audit Evidence';
+      case 'exceptions':
+        return 'Exceptions & Temuan Audit';
+      case 'raw_bapl':
+        return 'Hasil OCR & Raw BAPL';
+      default:
+        return 'Dashboard Executive';
+    }
+  };
 
   // Pipeline Execution State
   const [isProcessing, setIsProcessing] = useState<boolean>(false);
@@ -235,51 +273,25 @@ export default function App() {
         justekFiles,
         excelFiles,
         supportingFiles,
-        packageName,
-        isGoldenTestCase: baplFiles.length === 0 && justekFiles.length === 0 && excelFiles.length === 0,
         customConfig: config,
-        onProgress: (step, stepName, detail, pct) => {
-          setProgress({ step, stepName, detail, percentage: pct });
-        },
+        onProgress: (step, stepName, detail, percentage) =>
+          setProgress({ step, stepName, detail, percentage }),
       });
 
+      // Construct a new DocumentPackage
       const newPackageId = `pkg-${Date.now()}`;
-      const defaultTitle =
-        packageName?.trim() ||
-        `Program ${packages.length + 1}: ${
-          output.project.projectCode || 'PROYEK'
-        } - ${output.project.projectName || 'Hasil Verifikasi'}`;
-
-      const primaryExcelName = excelFiles.find((f) => /\.(xlsx|xls|csv)$/i.test(f.name))?.name;
-
-      const newPkg: DocumentPackage = {
+      const projectCode = output.project.projectCode || `PRJ-${packages.length + 1}`;
+      const newPackage: DocumentPackage = {
         id: newPackageId,
-        title: defaultTitle,
-        projectCode: output.project.projectCode || 'PROYEK',
-        projectName: output.project.projectName || 'Verifikasi Pasangan Dokumen',
-        baplFiles:
-          baplFiles.length > 0
-            ? baplFiles.map((f) => ({ name: f.name, size: f.size }))
-            : [
-                {
-                  name: `BAPL_${output.project.projectCode || 'LAPANGAN'}.pdf`,
-                  size: 1428500,
-                  pageCount: output.raw_bapl.length,
-                },
-              ],
-        justekFiles: justekFiles.map((f) => ({
+        title: packageName || `Program ${packages.length + 1}: ${output.project.projectName}`,
+        projectCode,
+        projectName: output.project.projectName,
+        baplFiles: baplFiles.map((f) => ({
           name: f.name,
           size: f.size,
+          pageCount: output.raw_bapl ? output.raw_bapl.length : 1,
         })),
-        excelFiles: excelFiles.map((f) => ({
-          name: f.name,
-          size: f.size,
-        })),
-        projectFiles: [
-          ...justekFiles.map((f) => ({ name: f.name, size: f.size, type: 'PDF' })),
-          ...excelFiles.map((f) => ({ name: f.name, size: f.size, type: 'Excel' })),
-        ],
-        excelFileName: primaryExcelName || (excelFiles.length > 0 ? excelFiles[0].name : undefined),
+        excelFileName: excelFiles[0]?.name || 'RAB_Data.xlsx',
         supportingFiles: supportingFiles.map((f) => ({
           name: f.name,
           size: f.size,
@@ -289,530 +301,564 @@ export default function App() {
         result: output,
       };
 
-      // Add to packages list and persist immediately to high-capacity storage
-      await persistSinglePackage(newPkg);
-      setPackages((prev) => [...prev, newPkg]);
+      const updated = [newPackage, ...packages];
+      await persistAllPackages(updated);
+      setPackages(updated);
       setActivePackageId(newPackageId);
       setActiveTab('dashboard');
     } catch (err: any) {
-      console.error('Pipeline execution error:', err);
+      console.error('Pipeline failure:', err);
       setPipelineError(
-        err?.message || 'Terjadi kendala saat memproses berkas. Pastikan format berkas Excel atau PDF valid dan tidak terenkripsi/rusak.'
+        err?.message || 'Terjadi kesalahan sistem saat memproses dokumen.'
       );
     } finally {
       setIsProcessing(false);
     }
   };
 
-  const handleLoadGoldenCase = () => {
-    const existingGolden = packages.find((p) => p.projectCode === '46223A');
-    if (existingGolden) {
-      setActivePackageId(existingGolden.id);
+  const handleLoadGoldenCase = async () => {
+    setIsProcessing(true);
+    setProgress({
+      step: 1,
+      stepName: 'Memuat Data Acuan',
+      detail: 'Menyiapkan paket acuan Proyek 46223A',
+      percentage: 30,
+    });
+
+    setTimeout(async () => {
+      setProgress({
+        step: 5,
+        stepName: 'Selesai',
+        detail: 'Paket acuan Proyek 46223A siap ditinjau',
+        percentage: 100,
+      });
+
+      const existingGolden = packages.find((p) => p.id === 'pkg-46223A');
+      if (existingGolden) {
+        setActivePackageId('pkg-46223A');
+      } else {
+        const updated = [INITIAL_PACKAGE, ...packages];
+        await persistAllPackages(updated);
+        setPackages(updated);
+        setActivePackageId(INITIAL_PACKAGE.id);
+      }
       setActiveTab('dashboard');
-      setShowUpload(false);
-    } else {
-      setPackages((prev) => [INITIAL_PACKAGE, ...prev]);
-      setActivePackageId(INITIAL_PACKAGE.id);
-      setActiveTab('dashboard');
-      setShowUpload(false);
+      setIsProcessing(false);
+    }, 400);
+  };
+
+  const handleDeletePackage = async (packageId: string) => {
+    const updated = packages.filter((p) => p.id !== packageId);
+    await removePackageFromStorage(packageId);
+    await persistAllPackages(updated);
+    setPackages(updated);
+
+    if (activePackageId === packageId) {
+      if (updated.length > 0) {
+        setActivePackageId(updated[0].id);
+      } else {
+        setActivePackageId('');
+      }
     }
   };
 
-  const handleRenamePackage = (pkgId: string, newTitle: string) => {
-    setPackages((prev) => {
-      const updated = prev.map((p) => (p.id === pkgId ? { ...p, title: newTitle } : p));
-      persistAllPackages(updated);
-      return updated;
-    });
+  const handleRenamePackage = async (packageId: string, newTitle: string) => {
+    const updated = packages.map((p) =>
+      p.id === packageId ? { ...p, title: newTitle } : p
+    );
+    await persistAllPackages(updated);
+    setPackages(updated);
   };
 
   const handleResetToGolden = async () => {
-    const defaultPkgs = [INITIAL_PACKAGE, DEFAULT_PAKET_2];
-    await persistAllPackages(defaultPkgs);
-    setPackages(defaultPkgs);
+    await persistAllPackages([INITIAL_PACKAGE, DEFAULT_PAKET_2]);
+    await persistActivePackageId(INITIAL_PACKAGE.id);
+    setPackages([INITIAL_PACKAGE, DEFAULT_PAKET_2]);
     setActivePackageId(INITIAL_PACKAGE.id);
     setActiveTab('dashboard');
-    setShowUpload(false);
+    setShowReset(false);
   };
 
   const handleClearAll = async () => {
     await clearAllStoredPackages();
     setPackages([]);
     setActivePackageId('');
-    setShowUpload(true);
-  };
-
-  const handleDeletePackage = async (pkgId: string) => {
-    await removePackageFromStorage(pkgId);
-    setPackages((prev) => {
-      const updated = prev.filter((p) => p.id !== pkgId);
-      persistAllPackages(updated);
-      if (activePackageId === pkgId) {
-        if (updated.length > 0) {
-          setActivePackageId(updated[0].id);
-        } else {
-          setActivePackageId('');
-          setShowUpload(true);
-        }
-      }
-      return updated;
-    });
-  };
-
-  const handleSaveReview = (review: HumanReview) => {
-    if (!activePackage) return;
-    const updatedResult = {
-      ...activePackage.result,
-      human_review: review,
-    };
-    setPackages((prev) => {
-      const updated = prev.map((p) =>
-        p.id === activePackage.id ? { ...p, result: updatedResult } : p
-      );
-      persistAllPackages(updated);
-      return updated;
-    });
+    setShowReset(false);
   };
 
   const handleExportBackup = () => {
-    if (packages.length === 0) return;
     exportPackagesBackup(packages);
   };
 
   const handleImportBackup = async (file: File) => {
     try {
       const imported = await importPackagesBackup(file);
-      // Merge: replace existing duplicates with imported version, keep others
-      const importedIds = new Set(imported.map((p) => p.id));
-      const merged = [
-        ...packages.filter((p) => !importedIds.has(p.id)),
-        ...imported,
-      ];
-      await persistAllPackages(merged);
-      setPackages(merged);
+      const existingIds = new Set(packages.map((p) => p.id));
+      const combined = [...packages];
+
+      let addedCount = 0;
+      for (const p of imported) {
+        if (!existingIds.has(p.id)) {
+          combined.push(p);
+          addedCount++;
+        }
+      }
+
+      await persistAllPackages(combined);
+      setPackages(combined);
       if (imported.length > 0) {
-        setActivePackageId(imported[imported.length - 1].id);
+        setActivePackageId(imported[0].id);
       }
       setImportNotification(
-        `Berhasil memulihkan ${imported.length} paket dokumen dari berkas cadangan JSON! Data tersimpan permanen di database browser.`
+        `Berhasil memulihkan ${imported.length} paket data (${addedCount} paket baru ditambahkan)!`
       );
-      setTimeout(() => setImportNotification(null), 6000);
+      setTimeout(() => setImportNotification(null), 5000);
     } catch (err: any) {
-      setPipelineError(
-        err?.message || 'Gagal mengimpor berkas cadangan JSON. Pastikan format file sesuai.'
-      );
+      alert(`Gagal memulihkan file cadangan: ${err.message}`);
     }
   };
 
   const emptyStateFileInputRef = useRef<HTMLInputElement>(null);
 
-  const handleGoogleLogin = async () => {
-    try {
-      const res = await googleSignIn();
-      if (res) {
-        setGoogleUser(res.user);
-        setGoogleAccessToken(res.accessToken);
-        setImportNotification(`Google Drive terhubung dengan akun ${res.user.email}!`);
-        setTimeout(() => setImportNotification(null), 5000);
-      }
-    } catch (err: any) {
-      console.error('Google Sign-in error:', err);
-    }
-  };
-
-  const handleGoogleLogout = async () => {
-    await googleSignOut();
-    setGoogleUser(null);
-    setGoogleAccessToken(null);
-    setImportNotification('Koneksi Google Drive telah diputuskan.');
-    setTimeout(() => setImportNotification(null), 4000);
-  };
-
-  const handleImportFromDrive = async (pkg: DocumentPackage) => {
-    const existingIds = new Set(packages.map((p) => p.id));
-    const merged = existingIds.has(pkg.id)
-      ? packages.map((p) => (p.id === pkg.id ? pkg : p))
-      : [...packages, pkg];
-
-    await persistAllPackages(merged);
-    setPackages(merged);
-    setActivePackageId(pkg.id);
-    setActiveTab('dashboard');
-    setShowGoogleDriveModal(false);
-    setImportNotification(`Paket "${pkg.title}" berhasil dimuat dari Google Drive!`);
-    setTimeout(() => setImportNotification(null), 5000);
-  };
-
   const highExceptionsCount =
     result?.exceptions.filter((e) => e.priority === 'HIGH').length || 0;
 
+  if (!hasEnteredDashboard) {
+    return (
+      <WelcomeView
+        onEnterDashboard={handleEnterDashboard}
+      />
+    );
+  }
+
   return (
-    <div className="min-h-screen bg-slate-100/70 text-slate-800 flex flex-col font-sans antialiased">
-      {/* Primary Header with Reset Button */}
-      <Header
-        result={result}
-        onOpenUpload={() => setShowUpload(!showUpload)}
-        onLoadGoldenCase={handleLoadGoldenCase}
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-800 dark:text-slate-100 flex font-sans antialiased relative w-full max-w-full overflow-x-hidden selection:bg-amber-400 selection:text-slate-950 transition-colors duration-200">
+      {/* Interactive Collapsible Sidebar */}
+      <Sidebar
+        activeTab={activeTab}
+        onSelectTab={(tab) => {
+          if (tab === 'welcome') {
+            handleNavigateWelcome();
+          } else {
+            setActiveTab(tab);
+            setShowUpload(false);
+          }
+          if (isMobileSidebarOpen) setIsMobileSidebarOpen(false);
+        }}
+        packages={packages}
+        activePackageId={activePackageId}
+        onSelectPackage={(id) => {
+          setActivePackageId(id);
+          setShowUpload(false);
+          if (activeTab === 'welcome') {
+            setActiveTab('dashboard');
+          }
+          if (isMobileSidebarOpen) setIsMobileSidebarOpen(false);
+        }}
+        onAddNewPackage={() => setShowUpload(true)}
         onOpenConfig={() => setShowConfig(true)}
-        onOpenReview={() => setShowReview(true)}
         onOpenReset={() => setShowReset(true)}
-        onOpenGoogleDrive={() => setShowGoogleDriveModal(true)}
-        googleUser={googleUser}
+        onDownloadExcel={() => result && downloadVerificationExcel(result)}
+        result={result}
+        highExceptionsCount={highExceptionsCount}
         isProcessing={isProcessing}
+        isCollapsed={isSidebarCollapsed}
+        onToggleCollapse={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
+        isMobileOpen={isMobileSidebarOpen}
+        onCloseMobile={() => setIsMobileSidebarOpen(false)}
       />
 
-      {/* Expandable Upload Panel */}
-      {showUpload && (
-        <UploadSection
-          onRunVerification={handleRunPipeline}
-          onLoadGoldenCase={handleLoadGoldenCase}
+      {/* Main Workspace Column - Fluid Layout Automatically Resizing on Sidebar Toggle */}
+      <div
+        className={`flex-1 flex flex-col min-w-0 transition-all duration-300 ease-in-out w-full max-w-full overflow-x-hidden ${
+          isSidebarCollapsed ? 'md:pl-20' : 'md:pl-64'
+        }`}
+      >
+        {/* Primary Header with Batas Domain, Clock, and Dark Mode Toggle */}
+        <Header
+          result={result}
+          onOpenConfig={() => setShowConfig(true)}
+          onOpenReview={() => setShowReview(true)}
+          onOpenReset={() => setShowReset(true)}
           isProcessing={isProcessing}
-          onClose={() => setShowUpload(false)}
-          existingPackageCount={packages.length}
+          onToggleSidebar={() => {
+            if (window.innerWidth < 768) {
+              setIsMobileSidebarOpen(!isMobileSidebarOpen);
+            } else {
+              setIsSidebarCollapsed(!isSidebarCollapsed);
+            }
+          }}
+          activeTabName={getActiveTabLabel(activeTab)}
+          activeProjectCode={activePackage?.projectCode}
+          onNavigateWelcome={handleNavigateWelcome}
+          isDarkMode={isDarkMode}
+          onToggleDarkMode={handleToggleDarkMode}
         />
-      )}
 
-      {/* Main Content Area */}
-      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
-        {/* Success / Notification Banner for Backup Restore */}
-        {importNotification && (
-          <div className="bg-emerald-50 border border-emerald-200 rounded-2xl p-4 flex items-center justify-between gap-3 shadow-xs animate-in fade-in">
-            <div className="flex items-center gap-2.5">
-              <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0" />
-              <p className="text-xs font-semibold text-emerald-900">{importNotification}</p>
-            </div>
-            <button
-              type="button"
-              onClick={() => setImportNotification(null)}
-              className="text-xs text-emerald-700 hover:text-emerald-900 font-bold px-2 py-1 rounded-md hover:bg-emerald-100 transition-colors"
-            >
-              Tutup
-            </button>
-          </div>
+        {/* Expandable Upload Panel */}
+        {showUpload && (
+          <UploadSection
+            onRunVerification={handleRunPipeline}
+            isProcessing={isProcessing}
+            onClose={() => setShowUpload(false)}
+            existingPackageCount={packages.length}
+          />
         )}
 
-        {/* Error Notification Banner if pipeline fails */}
-        {pipelineError && (
-          <div className="bg-rose-50 border border-rose-200 rounded-2xl p-4.5 flex items-start justify-between gap-3 shadow-xs">
-            <div className="flex items-start gap-3">
-              <ShieldAlert className="w-5 h-5 text-rose-600 shrink-0 mt-0.5" />
-              <div>
-                <h4 className="text-sm font-bold text-rose-900">Kendala Pemrosesan Dokumen</h4>
-                <p className="text-xs text-rose-700 mt-0.5 leading-relaxed">{pipelineError}</p>
+        {/* Main Content Area - Fluid width without clipping */}
+        <main className="flex-1 w-full max-w-full px-3 sm:px-4 md:px-6 py-4 sm:py-6 space-y-5 overflow-x-hidden min-h-0">
+          {/* Success / Notification Banner for Backup Restore */}
+          {importNotification && (
+            <div className="bg-emerald-50 border border-emerald-200 rounded-2xl p-4 flex items-center justify-between gap-3 shadow-xs animate-in fade-in">
+              <div className="flex items-center gap-2.5">
+                <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0" />
+                <p className="text-xs font-semibold text-emerald-900">{importNotification}</p>
               </div>
-            </div>
-            <div className="flex items-center gap-2 shrink-0">
               <button
                 type="button"
-                onClick={() => {
-                  setPipelineError(null);
-                  setShowUpload(true);
-                }}
-                className="px-3 py-1.5 text-xs font-semibold rounded-lg bg-rose-600 text-white hover:bg-rose-700 transition-colors shadow-2xs"
-              >
-                Unggah Ulang
-              </button>
-              <button
-                type="button"
-                onClick={() => setPipelineError(null)}
-                className="px-2.5 py-1.5 text-xs font-medium rounded-lg text-slate-500 hover:text-slate-700 hover:bg-rose-100/60 transition-colors"
+                onClick={() => setImportNotification(null)}
+                className="text-xs text-emerald-700 hover:text-emerald-900 font-bold px-2 py-1 rounded-md hover:bg-emerald-100 transition-colors"
               >
                 Tutup
               </button>
             </div>
-          </div>
-        )}
+          )}
 
-        {/* Document Package Bar: Lists every uploaded and processed document pair */}
-        {packages.length > 0 && !isProcessing && (
-          <DocumentPackageBar
-            packages={packages}
-            activePackageId={activePackageId}
-            onSelectPackage={(id) => {
-              setActivePackageId(id);
-              setShowUpload(false);
-            }}
-            onDeletePackage={handleDeletePackage}
-            onRequestDeletePackage={(pkg) => setPackageToDelete(pkg)}
-            onRenamePackage={handleRenamePackage}
-            onAddNewPackage={() => setShowUpload(true)}
-            onExportBackup={handleExportBackup}
-            onImportBackup={handleImportBackup}
-            onOpenGoogleDrive={() => setShowGoogleDriveModal(true)}
-            isGoogleDriveConnected={Boolean(googleUser && googleAccessToken)}
-          />
-        )}
+          {/* Error Notification Banner if pipeline fails */}
+          {pipelineError && (
+            <div className="bg-rose-50 border border-rose-200 rounded-2xl p-4.5 flex items-start justify-between gap-3 shadow-xs">
+              <div className="flex items-start gap-3">
+                <ShieldAlert className="w-5 h-5 text-rose-600 shrink-0 mt-0.5" />
+                <div>
+                  <h4 className="text-sm font-bold text-rose-900">Kendala Pemrosesan Dokumen</h4>
+                  <p className="text-xs text-rose-700 mt-0.5 leading-relaxed">{pipelineError}</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-2 shrink-0">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setPipelineError(null);
+                    setShowUpload(true);
+                  }}
+                  className="px-3 py-1.5 text-xs font-semibold rounded-lg bg-rose-600 text-white hover:bg-rose-700 transition-colors shadow-2xs"
+                >
+                  Unggah Ulang
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setPipelineError(null)}
+                  className="px-2.5 py-1.5 text-xs font-medium rounded-lg text-slate-500 hover:text-slate-700 hover:bg-rose-100/60 transition-colors"
+                >
+                  Tutup
+                </button>
+              </div>
+            </div>
+          )}
 
-        {/* Progress Stepper during active run */}
-        {isProcessing && (
-          <VerificationProgress
-            currentStep={progress.step}
-            stepName={progress.stepName}
-            detail={progress.detail}
-            percentage={progress.percentage}
-          />
-        )}
-
-        {/* Empty State when all packages cleared */}
-        {packages.length === 0 && !isProcessing && (
-          <div className="bg-white rounded-2xl border border-slate-200 p-12 text-center max-w-xl mx-auto space-y-4 shadow-xs">
-            <input
-              type="file"
-              ref={emptyStateFileInputRef}
-              onChange={(e) => {
-                const file = e.target.files?.[0];
-                if (file) handleImportBackup(file);
-                e.target.value = '';
-              }}
-              accept=".json,application/json"
-              className="hidden"
+          {/* Progress Indicator for Live Processing */}
+          {isProcessing && (
+            <VerificationProgress
+              currentStep={progress.step}
+              stepName={progress.stepName}
+              detail={progress.detail}
+              percentage={progress.percentage}
             />
-            <div className="w-14 h-14 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center mx-auto">
-              <FolderSync className="w-7 h-7" />
-            </div>
-            <div>
-              <h3 className="text-base font-bold text-slate-900">
-                Belum Ada Pasangan Dokumen
-              </h3>
-              <p className="text-xs text-slate-500 mt-1 max-w-md mx-auto">
-                Sistem telah di-reset. Silakan upload pasangan dokumen BAPL (bisa multi-dokumen), Justek, Jusfin &amp; RAB di atas, atau muat data sampel acuan, atau pulihkan dari file cadangan JSON / Google Drive.
-              </p>
-            </div>
-            <div className="flex flex-wrap items-center justify-center gap-3 pt-2">
-              <button
-                type="button"
-                onClick={() => setShowUpload(true)}
-                className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold text-white bg-blue-600 hover:bg-blue-700 shadow-xs transition-colors"
-              >
-                <UploadCloud className="w-4 h-4" />
-                <span>Upload Dokumen Sekarang</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => emptyStateFileInputRef.current?.click()}
-                className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-semibold text-slate-700 hover:bg-slate-100 border border-slate-200 transition-colors"
-              >
-                <Download className="w-3.5 h-3.5 text-slate-500 rotate-180" />
-                <span>Pulihkan Cadangan (JSON)</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => setShowGoogleDriveModal(true)}
-                className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-semibold text-blue-700 bg-blue-50 hover:bg-blue-100 border border-blue-200 transition-colors"
-              >
-                <Cloud className="w-3.5 h-3.5 text-blue-600" />
-                <span>Buka dari Google Drive</span>
-              </button>
-              <button
-                type="button"
-                onClick={handleLoadGoldenCase}
-                className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-semibold text-slate-700 hover:bg-slate-100 border border-slate-200 transition-colors"
-              >
-                <Sparkles className="w-3.5 h-3.5 text-amber-500" />
-                <span>Muat Golden Test Case</span>
-              </button>
-            </div>
-          </div>
-        )}
+          )}
 
-        {/* Tab Navigation & Content */}
-        {result && !isProcessing && (
-          <div className="space-y-6">
-            {/* Tab Bar */}
-            <div className="bg-white rounded-2xl border border-slate-200 p-1.5 shadow-xs flex items-center gap-1 overflow-x-auto">
-              <button
-                id="tab-dashboard"
-                type="button"
-                onClick={() => setActiveTab('dashboard')}
-                className={`px-3.5 py-2 rounded-xl text-xs font-bold flex items-center gap-2 whitespace-nowrap transition-all ${
-                  activeTab === 'dashboard'
-                    ? 'bg-slate-900 text-white shadow-2xs'
-                    : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
-                }`}
-              >
-                <LayoutDashboard className="w-4 h-4" />
-                <span>Dashboard Executive</span>
-              </button>
-
-              <button
-                id="tab-technical"
-                type="button"
-                onClick={() => setActiveTab('technical')}
-                className={`px-3.5 py-2 rounded-xl text-xs font-bold flex items-center gap-2 whitespace-nowrap transition-all ${
-                  activeTab === 'technical'
-                    ? 'bg-slate-900 text-white shadow-2xs'
-                    : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
-                }`}
-              >
-                <FileCheck className="w-4 h-4" />
-                <span>Verifikasi Teknis (Approval JusTek)</span>
-                <span className="px-1.5 py-0.2 rounded-full text-[10px] bg-slate-200/80 text-slate-700">
-                  {result.changes.length}
-                </span>
-              </button>
-
-              <button
-                id="tab-financial"
-                type="button"
-                onClick={() => setActiveTab('financial')}
-                className={`px-3.5 py-2 rounded-xl text-xs font-bold flex items-center gap-2 whitespace-nowrap transition-all ${
-                  activeTab === 'financial'
-                    ? 'bg-slate-900 text-white shadow-2xs'
-                    : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
-                }`}
-              >
-                <Calculator className="w-4 h-4" />
-                <span>Verifikasi Finansial (Approval JusFin)</span>
-                {!result.total_rab.delta_match && (
-                  <span className="px-1.5 py-0.2 rounded-full text-[10px] bg-rose-500 text-white font-bold">
-                    Diff
-                  </span>
-                )}
-              </button>
-
-              <button
-                id="tab-traceability"
-                type="button"
-                onClick={() => setActiveTab('traceability')}
-                className={`px-3.5 py-2 rounded-xl text-xs font-bold flex items-center gap-2 whitespace-nowrap transition-all ${
-                  activeTab === 'traceability'
-                    ? 'bg-slate-900 text-white shadow-2xs'
-                    : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
-                }`}
-              >
-                <GitCommit className="w-4 h-4" />
-                <span>Matriks Traceability</span>
-                <span className="px-1.5 py-0.2 rounded-full text-[10px] bg-slate-200/80 text-slate-700">
-                  {result.traceability.length}
-                </span>
-              </button>
-
-              <button
-                id="tab-evidence"
-                type="button"
-                onClick={() => setActiveTab('evidence')}
-                className={`px-3.5 py-2 rounded-xl text-xs font-bold flex items-center gap-2 whitespace-nowrap transition-all ${
-                  activeTab === 'evidence'
-                    ? 'bg-slate-900 text-white shadow-2xs'
-                    : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
-                }`}
-              >
-                <FileSearch className="w-4 h-4" />
-                <span>Audit Evidence</span>
-                <span className="px-1.5 py-0.2 rounded-full text-[10px] bg-slate-200/80 text-slate-700">
-                  {result.evidences.length}
-                </span>
-              </button>
-
-              <button
-                id="tab-exceptions"
-                type="button"
-                onClick={() => setActiveTab('exceptions')}
-                className={`px-3.5 py-2 rounded-xl text-xs font-bold flex items-center gap-2 whitespace-nowrap transition-all ${
-                  activeTab === 'exceptions'
-                    ? 'bg-slate-900 text-white shadow-2xs'
-                    : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
-                }`}
-              >
-                <ShieldAlert className="w-4 h-4" />
-                <span>Exceptions &amp; Temuan</span>
-                {highExceptionsCount > 0 && (
-                  <span className="px-1.5 py-0.2 rounded-full text-[10px] bg-rose-600 text-white font-bold">
-                    {highExceptionsCount} HIGH
-                  </span>
-                )}
-              </button>
-
-              <button
-                id="tab-raw_bapl"
-                type="button"
-                onClick={() => setActiveTab('raw_bapl')}
-                className={`px-3.5 py-2 rounded-xl text-xs font-bold flex items-center gap-2 whitespace-nowrap transition-all ${
-                  activeTab === 'raw_bapl'
-                    ? 'bg-slate-900 text-white shadow-2xs'
-                    : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
-                }`}
-              >
-                <FileText className="w-4 h-4" />
-                <span>Hasil OCR &amp; Raw BAPL</span>
-                <span className="px-1.5 py-0.2 rounded-full text-[10px] bg-emerald-100 text-emerald-800 font-bold">
-                  {result.raw_bapl.length} Hal
-                </span>
-              </button>
-            </div>
-
-            {/* Active View Component */}
-            {activeTab === 'dashboard' && (
-              <DashboardView
-                result={result}
-                onSelectTab={(tab) => setActiveTab(tab as TabType)}
-                onDeleteCurrentPackage={
-                  activePackage ? () => setPackageToDelete(activePackage) : undefined
-                }
-              />
-            )}
-
-            {activeTab === 'technical' && (
-              <TechnicalVerificationView changes={result.changes} />
-            )}
-
-            {activeTab === 'financial' && (
-              <FinancialVerificationView
-                totalRab={result.total_rab}
-                items={result.financial_items}
-                technicalChanges={result.changes}
-              />
-            )}
-
-            {activeTab === 'traceability' && (
-              <TraceabilityView records={result.traceability} />
-            )}
-
-            {activeTab === 'evidence' && (
-              <EvidenceView
-                evidences={result.evidences}
-                onViewRawBapl={(page) => {
-                  setSelectedRawBaplPage(page);
-                  setActiveTab('raw_bapl');
+          {/* Empty State when all packages cleared */}
+          {packages.length === 0 && !isProcessing && (
+            <div className="bg-white rounded-2xl border border-slate-200 p-12 text-center max-w-xl mx-auto space-y-4 shadow-xs">
+              <input
+                type="file"
+                ref={emptyStateFileInputRef}
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  if (file) handleImportBackup(file);
+                  e.target.value = '';
                 }}
+                accept=".json,application/json"
+                className="hidden"
+              />
+              <div className="w-14 h-14 rounded-2xl bg-sky-50 text-[#0054a6] flex items-center justify-center mx-auto">
+                <FolderSync className="w-7 h-7" />
+              </div>
+              <div>
+                <h3 className="text-base font-bold text-slate-900">
+                  Belum Ada Pasangan Dokumen
+                </h3>
+                <p className="text-xs text-slate-500 mt-1 max-w-md mx-auto">
+                  Sistem telah di-reset. Silakan upload pasangan dokumen BAPL, Justek, Jusfin &amp; RAB menggunakan tombol di bawah atau pulihkan dari file cadangan JSON.
+                </p>
+              </div>
+              <div className="flex flex-wrap items-center justify-center gap-3 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setShowUpload(true)}
+                  className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-extrabold text-white bg-gradient-to-r from-[#0054a6] via-[#0080c8] to-amber-500 hover:from-[#004690] hover:to-amber-600 shadow-xs ring-2 ring-amber-400/30 transition-all cursor-pointer"
+                >
+                  <UploadCloud className="w-4 h-4" />
+                  <span>Upload Dokumen Sekarang</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => emptyStateFileInputRef.current?.click()}
+                  className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-semibold text-slate-700 hover:bg-slate-100 border border-slate-200 transition-colors cursor-pointer"
+                >
+                  <Download className="w-3.5 h-3.5 text-slate-500 rotate-180" />
+                  <span>Pulihkan Cadangan (JSON)</span>
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Verification Workspace (Dashboard, Technical, Financial, etc.) */}
+          <div className="space-y-5">
+            {/* Document Package Bar: Lists every uploaded and processed document pair */}
+            {packages.length > 0 && !isProcessing && (
+              <DocumentPackageBar
+                packages={packages}
+                activePackageId={activePackageId}
+                onSelectPackage={(id) => {
+                  setActivePackageId(id);
+                  setShowUpload(false);
+                }}
+                onDeletePackage={handleDeletePackage}
+                onRequestDeletePackage={(pkg) => setPackageToDelete(pkg)}
+                onRenamePackage={handleRenamePackage}
+                onAddNewPackage={() => setShowUpload(true)}
+                onExportBackup={handleExportBackup}
+                onImportBackup={handleImportBackup}
               />
             )}
 
-            {activeTab === 'exceptions' && (
-              <ExceptionsView exceptions={result.exceptions} />
-            )}
+            {/* Tab Navigation & Content */}
+            {result && !isProcessing && (
+              <div className="space-y-5">
+                {/* Tab Bar - Compact & Scroll-Safe on Laptops */}
+                <div className="flex items-center gap-1.5 overflow-x-auto pb-1 border-b border-sky-100 scrollbar-none">
+                  <button
+                    id="tab-welcome-header"
+                    type="button"
+                    onClick={handleNavigateWelcome}
+                    title="Kembali ke Laman Selamat Datang"
+                    className="px-3.5 py-2 rounded-xl text-xs font-bold flex items-center gap-1.5 whitespace-nowrap transition-all text-slate-600 hover:text-[#0054a6] hover:bg-sky-50 dark:text-slate-300 dark:hover:text-cyan-400 dark:hover:bg-slate-800"
+                  >
+                    <Home className="w-3.5 h-3.5 text-[#0054a6] dark:text-cyan-400" />
+                    <span>Laman Selamat Datang</span>
+                  </button>
 
-            {activeTab === 'raw_bapl' && (
-              <RawBaplView
-                pages={result.raw_bapl}
-                initialPage={selectedRawBaplPage}
-              />
-            )}
-          </div>
-        )}
-      </main>
+                    <button
+                      id="tab-dashboard"
+                      type="button"
+                      onClick={() => setActiveTab('dashboard')}
+                      className={`px-3.5 py-2 rounded-xl text-xs font-bold flex items-center gap-2 whitespace-nowrap transition-all ${
+                        activeTab === 'dashboard'
+                          ? 'bg-gradient-to-r from-[#0054a6] via-[#0077c8] to-amber-500 text-white shadow-xs font-bold'
+                          : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100 dark:text-slate-300 dark:hover:text-white dark:hover:bg-slate-800'
+                      }`}
+                    >
+                      <LayoutDashboard className="w-4 h-4" />
+                      <span>Executive Dashboard</span>
+                    </button>
 
-      {/* Footer */}
-      <footer className="bg-white border-t border-slate-200 py-4 mt-12 text-center text-xs text-slate-500">
-        <div className="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-2">
-          <p>
-            Automated BAPL Verification System &copy; 2026 • Standar PMO &amp; Audit Kepatuhan Kontrak
-          </p>
-          <div className="flex items-center gap-4 text-[11px] text-slate-400">
-            <span>Multi-BAPL Document Extractor</span>
-            <span>•</span>
-            <span>Independent Document Pairing Engine</span>
-            <span>•</span>
-            <span>Deterministic Math Recalculator</span>
+                    <button
+                      id="tab-technical"
+                      type="button"
+                      onClick={() => setActiveTab('technical')}
+                      className={`px-3.5 py-2 rounded-xl text-xs font-bold flex items-center gap-2 whitespace-nowrap transition-all ${
+                        activeTab === 'technical'
+                          ? 'bg-gradient-to-r from-[#0054a6] via-[#0077c8] to-amber-500 text-white shadow-xs font-bold'
+                          : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100 dark:text-slate-300 dark:hover:text-white dark:hover:bg-slate-800'
+                      }`}
+                    >
+                      <FileCheck className="w-4 h-4" />
+                      <span>Verifikasi Teknis</span>
+                      <span className="px-1.5 py-0.2 rounded-full text-[10px] bg-white/20 text-white font-bold">
+                        {result.changes.length}
+                      </span>
+                    </button>
+
+                    <button
+                      id="tab-financial"
+                      type="button"
+                      onClick={() => setActiveTab('financial')}
+                      className={`px-3.5 py-2 rounded-xl text-xs font-bold flex items-center gap-2 whitespace-nowrap transition-all ${
+                        activeTab === 'financial'
+                          ? 'bg-gradient-to-r from-[#0054a6] via-[#0077c8] to-amber-500 text-white shadow-xs font-bold'
+                          : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100 dark:text-slate-300 dark:hover:text-white dark:hover:bg-slate-800'
+                      }`}
+                    >
+                      <Calculator className="w-4 h-4" />
+                      <span>Verifikasi Finansial</span>
+                      {!result.total_rab.delta_match ? (
+                        <span className="px-1.5 py-0.2 rounded-full text-[10px] bg-rose-500 text-white font-bold">
+                          Selisih
+                        </span>
+                      ) : (
+                        <span className="px-1.5 py-0.2 rounded-full text-[10px] bg-emerald-500 text-white font-bold">
+                          Cocok
+                        </span>
+                      )}
+                    </button>
+
+                    <button
+                      id="tab-traceability"
+                      type="button"
+                      onClick={() => setActiveTab('traceability')}
+                      className={`px-3.5 py-2 rounded-xl text-xs font-bold flex items-center gap-2 whitespace-nowrap transition-all ${
+                        activeTab === 'traceability'
+                          ? 'bg-gradient-to-r from-[#0054a6] via-[#0077c8] to-amber-500 text-white shadow-xs font-bold'
+                          : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100 dark:text-slate-300 dark:hover:text-white dark:hover:bg-slate-800'
+                      }`}
+                    >
+                      <GitCommit className="w-4 h-4" />
+                      <span>Traceability</span>
+                      <span className="px-1.5 py-0.2 rounded-full text-[10px] bg-white/20 text-white font-bold">
+                        {result.traceability.length}
+                      </span>
+                    </button>
+
+                    <button
+                      id="tab-evidence"
+                      type="button"
+                      onClick={() => setActiveTab('evidence')}
+                      className={`px-3.5 py-2 rounded-xl text-xs font-bold flex items-center gap-2 whitespace-nowrap transition-all ${
+                        activeTab === 'evidence'
+                          ? 'bg-gradient-to-r from-[#0054a6] via-[#0077c8] to-amber-500 text-white shadow-xs font-bold'
+                          : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100 dark:text-slate-300 dark:hover:text-white dark:hover:bg-slate-800'
+                      }`}
+                    >
+                      <FileSearch className="w-4 h-4" />
+                      <span>Audit Evidence</span>
+                      <span className="px-1.5 py-0.2 rounded-full text-[10px] bg-slate-200/80 text-slate-700">
+                        {result.evidences.length}
+                      </span>
+                    </button>
+
+                    <button
+                      id="tab-exceptions"
+                      type="button"
+                      onClick={() => setActiveTab('exceptions')}
+                      className={`px-3.5 py-2 rounded-xl text-xs font-bold flex items-center gap-2 whitespace-nowrap transition-all ${
+                        activeTab === 'exceptions'
+                          ? 'bg-gradient-to-r from-[#0054a6] via-[#0077c8] to-amber-500 text-white shadow-xs font-bold'
+                          : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100 dark:text-slate-300 dark:hover:text-white dark:hover:bg-slate-800'
+                      }`}
+                    >
+                      <ShieldAlert className="w-4 h-4" />
+                      <span>Exceptions &amp; Temuan</span>
+                      {highExceptionsCount > 0 && (
+                        <span className="px-1.5 py-0.2 rounded-full text-[10px] bg-rose-600 text-white font-bold">
+                          {highExceptionsCount} HIGH
+                        </span>
+                      )}
+                    </button>
+
+                    <button
+                      id="tab-raw_bapl"
+                      type="button"
+                      onClick={() => setActiveTab('raw_bapl')}
+                      className={`px-3.5 py-2 rounded-xl text-xs font-bold flex items-center gap-2 whitespace-nowrap transition-all ${
+                        activeTab === 'raw_bapl'
+                          ? 'bg-gradient-to-r from-[#0054a6] via-[#0077c8] to-amber-500 text-white shadow-xs font-bold'
+                          : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100 dark:text-slate-300 dark:hover:text-white dark:hover:bg-slate-800'
+                      }`}
+                    >
+                      <FileText className="w-4 h-4" />
+                      <span>Hasil OCR &amp; Raw BAPL</span>
+                      <span className="px-1.5 py-0.2 rounded-full text-[10px] bg-emerald-100 text-emerald-800 font-bold">
+                        {result.raw_bapl.length} Hal
+                      </span>
+                    </button>
+                  </div>
+
+                  {/* Active View Component */}
+                  {activeTab === 'dashboard' && (
+                    <DashboardView
+                      result={result}
+                      onSelectTab={(tab) => setActiveTab(tab as TabType)}
+                      onDeleteCurrentPackage={
+                        activePackage ? () => setPackageToDelete(activePackage) : undefined
+                      }
+                    />
+                  )}
+
+                  {activeTab === 'technical' && (
+                    <TechnicalVerificationView changes={result.changes} />
+                  )}
+
+                  {activeTab === 'financial' && (
+                    <FinancialVerificationView
+                      totalRab={result.total_rab}
+                      items={result.financial_items}
+                      technicalChanges={result.changes}
+                    />
+                  )}
+
+                  {activeTab === 'traceability' && (
+                    <TraceabilityView records={result.traceability} />
+                  )}
+
+                  {activeTab === 'evidence' && (
+                    <EvidenceView
+                      evidences={result.evidences}
+                      onViewRawBapl={(page) => {
+                        setSelectedRawBaplPage(page);
+                        setActiveTab('raw_bapl');
+                      }}
+                    />
+                  )}
+
+                  {activeTab === 'exceptions' && (
+                    <ExceptionsView exceptions={result.exceptions} />
+                  )}
+
+                  {activeTab === 'raw_bapl' && (
+                    <RawBaplView
+                      pages={result.raw_bapl}
+                      initialPage={selectedRawBaplPage}
+                    />
+                  )}
+                </div>
+              )}
+            </div>
+        </main>
+
+        {/* Footer */}
+        <footer className="bg-white border-t border-sky-100 py-4 mt-8 text-center text-xs text-slate-500 w-full shrink-0">
+          <div className="w-full max-w-full px-4 sm:px-6 flex flex-col sm:flex-row items-center justify-between gap-2">
+            <p>
+              PMO Cyclical Verifikasi Justifikasi Teknis &amp; Finansial &copy; 2026 &bull; PT Air Bersih Jakarta
+            </p>
+            <div className="flex items-center gap-4 text-[11px] text-slate-400">
+              <span>SLA: 6 IPA Jakarta</span>
+              <span>&bull;</span>
+              <span>Standar SPI &amp; BPK RI</span>
+            </div>
           </div>
-        </div>
-      </footer>
+        </footer>
+      </div>
 
       {/* Modals */}
       {showReview && result && (
         <HumanReviewModal
           initialReview={result.human_review}
-          onSave={handleSaveReview}
+          onSave={(updatedReview: HumanReview) => {
+            const updatedResult: VerificationResult = {
+              ...result,
+              human_review: updatedReview,
+            };
+            const updatedPackages = packages.map((p) =>
+              p.id === activePackageId ? { ...p, result: updatedResult } : p
+            );
+            const targetPkg = updatedPackages.find((p) => p.id === activePackageId);
+            if (targetPkg) {
+              persistSinglePackage(targetPkg);
+            }
+            setPackages(updatedPackages);
+            setShowReview(false);
+          }}
           onClose={() => setShowReview(false)}
         />
       )}
@@ -842,18 +888,6 @@ export default function App() {
             setPackageToDelete(null);
           }}
           onClose={() => setPackageToDelete(null)}
-        />
-      )}
-
-      {showGoogleDriveModal && (
-        <GoogleDriveModal
-          user={googleUser}
-          accessToken={googleAccessToken}
-          packages={packages}
-          onLogin={handleGoogleLogin}
-          onLogout={handleGoogleLogout}
-          onImportFromDrive={handleImportFromDrive}
-          onClose={() => setShowGoogleDriveModal(false)}
         />
       )}
     </div>

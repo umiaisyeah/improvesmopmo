@@ -19,7 +19,6 @@ import {
   Database,
   UploadCloud,
   ShieldCheck,
-  Cloud,
 } from 'lucide-react';
 import { DocumentPackage } from '../types';
 import { downloadVerificationExcel } from '../services/excelGenerator';
@@ -34,8 +33,6 @@ interface DocumentPackageBarProps {
   onRenamePackage?: (packageId: string, newTitle: string) => void;
   onExportBackup?: () => void;
   onImportBackup?: (file: File) => void;
-  onOpenGoogleDrive?: () => void;
-  isGoogleDriveConnected?: boolean;
 }
 
 export const DocumentPackageBar: React.FC<DocumentPackageBarProps> = ({
@@ -48,8 +45,6 @@ export const DocumentPackageBar: React.FC<DocumentPackageBarProps> = ({
   onRenamePackage,
   onExportBackup,
   onImportBackup,
-  onOpenGoogleDrive,
-  isGoogleDriveConnected,
 }) => {
   const [expandedDetails, setExpandedDetails] = useState<boolean>(false);
   const [editingPackageId, setEditingPackageId] = useState<string | null>(null);
@@ -161,22 +156,7 @@ export const DocumentPackageBar: React.FC<DocumentPackageBarProps> = ({
             </button>
           )}
 
-          {onOpenGoogleDrive && (
-            <button
-              id="btn-packagebar-google-drive"
-              type="button"
-              onClick={onOpenGoogleDrive}
-              title="Kelola sinkronisasi Google Drive untuk paket dokumen"
-              className={`inline-flex items-center space-x-1 px-2.5 py-1.5 rounded-lg text-xs font-medium border transition-colors ${
-                isGoogleDriveConnected
-                  ? 'bg-emerald-50 text-emerald-800 border-emerald-300 hover:bg-emerald-100'
-                  : 'bg-white text-slate-600 hover:text-slate-900 hover:bg-slate-100 border border-slate-200'
-              }`}
-            >
-              <Cloud className={`w-3.5 h-3.5 ${isGoogleDriveConnected ? 'text-emerald-600' : 'text-blue-600'}`} />
-              <span>{isGoogleDriveConnected ? 'Google Drive Aktif' : 'Google Drive'}</span>
-            </button>
-          )}
+
 
           <button
             type="button"
@@ -195,7 +175,7 @@ export const DocumentPackageBar: React.FC<DocumentPackageBarProps> = ({
             id="btn-add-new-package"
             type="button"
             onClick={onAddNewPackage}
-            className="inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-lg text-xs font-bold text-white bg-blue-600 hover:bg-blue-700 shadow-xs transition-colors"
+            className="inline-flex items-center space-x-1.5 px-3.5 py-1.5 rounded-xl text-xs font-bold text-white bg-gradient-to-r from-[#0054a6] via-[#0080c8] to-amber-500 hover:from-[#004690] hover:to-amber-600 shadow-xs ring-2 ring-amber-400/30 transition-all cursor-pointer"
           >
             <Plus className="w-3.5 h-3.5" />
             <span>+ Upload Pasangan Baru</span>

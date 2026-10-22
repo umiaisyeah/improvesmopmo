@@ -420,3 +420,7 @@ export interface UploadedFile {
   text?: string;
   sheets?: Record<string, any[]>;
 }
+
+// Re-export domain types for water project, Berita Acara, and justification components
+export * from './types/index';
+

@@ -1,1 +1,226 @@
 @import "tailwindcss";
+
+@variant dark (&:where(.dark, .dark *));
+
+@layer base {
+  :root {
+    --font-poppins: 'Poppins', ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  }
+
+  html,
+  body {
+    font-family: 'Poppins', ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    overflow-x: hidden;
+    width: 100%;
+    max-width: 100vw;
+  }
+
+  .dark {
+    color-scheme: dark;
+  }
+
+  /* Custom subtle scrollbar for tables and lists */
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  ::-webkit-scrollbar-track {
+    background: #f1f5f9;
+  }
+  .dark ::-webkit-scrollbar-track {
+    background: #090e17;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 9999px;
+  }
+  .dark ::-webkit-scrollbar-thumb {
+    background: #334155;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: #94a3b8;
+  }
+  .dark ::-webkit-scrollbar-thumb:hover {
+    background: #475569;
+  }
+}
+
+/* Global Dark Mode Overrides for Comprehensive Dashboard Theming */
+.dark body {
+  background-color: #040914;
+  color: #f8fafc;
+}
+
+.dark .bg-white {
+  background-color: #0d1627 !important;
+}
+
+.dark .bg-white\/95 {
+  background-color: rgba(13, 22, 39, 0.95) !important;
+}
+
+.dark .bg-slate-50 {
+  background-color: #080e1b !important;
+}
+
+.dark .bg-slate-50\/50 {
+  background-color: #080e1b !important;
+}
+
+.dark .bg-slate-100 {
+  background-color: #172338 !important;
+}
+
+.dark .bg-slate-100\/80 {
+  background-color: rgba(23, 35, 56, 0.8) !important;
+}
+
+.dark .hover\:bg-slate-50:hover {
+  background-color: #172338 !important;
+}
+
+.dark .hover\:bg-slate-100:hover {
+  background-color: #1a2a44 !important;
+}
+
+.dark .hover\:bg-slate-200:hover {
+  background-color: #233554 !important;
+}
+
+.dark .border-slate-200,
+.dark .border-slate-200\/80,
+.dark .border-slate-200\/60,
+.dark .border-sky-100,
+.dark .border-sky-200\/80,
+.dark .border-sky-200\/60 {
+  border-color: #1e2e4a !important;
+}
+
+.dark .text-slate-900 {
+  color: #f8fafc !important;
+}
+
+.dark .text-slate-800 {
+  color: #f1f5f9 !important;
+}
+
+.dark .text-slate-700 {
+  color: #cbd5e1 !important;
+}
+
+.dark .text-slate-600 {
+  color: #94a3b8 !important;
+}
+
+.dark .text-slate-500 {
+  color: #64748b !important;
+}
+
+.dark table thead th {
+  background-color: #0b1322 !important;
+  color: #cbd5e1 !important;
+  border-color: #1e2e4a !important;
+}
+
+.dark table tbody tr {
+  border-color: #1e2e4a !important;
+}
+
+.dark table tbody tr:hover {
+  background-color: #131e33 !important;
+}
+
+.dark input[type="text"],
+.dark input[type="search"],
+.dark select,
+.dark textarea {
+  background-color: #0f1a2e !important;
+  color: #f8fafc !important;
+  border-color: #263857 !important;
+}
+
+/* Water wave & gradient animations */
+@keyframes waterWaveSlow {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+.animate-water-gradient {
+  background-size: 200% 200%;
+  animation: waterWaveSlow 12s ease infinite;
+}
+
+@keyframes waterPulse {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 0.8;
+  }
+  50% {
+    transform: scale(1.05);
+    opacity: 1;
+  }
+}
+
+.animate-water-pulse {
+  animation: waterPulse 4s ease-in-out infinite;
+}
+
+/* Custom Dashboard Logo Animations */
+@keyframes spinSlow {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.animate-spin-slow {
+  animation: spinSlow 22s linear infinite;
+}
+
+@keyframes spinReverseSlow {
+  from {
+    transform: rotate(360deg);
+  }
+  to {
+    transform: rotate(0deg);
+  }
+}
+
+.animate-spin-reverse-slow {
+  animation: spinReverseSlow 26s linear infinite;
+}
+
+@keyframes floatGentle {
+  0%, 100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-8px);
+  }
+}
+
+.animate-float-gentle {
+  animation: floatGentle 5s ease-in-out infinite;
+}
+
+@keyframes logoGlow {
+  0%, 100% {
+    filter: drop-shadow(0 0 15px rgba(0, 163, 224, 0.4)) drop-shadow(0 0 35px rgba(0, 84, 166, 0.25));
+  }
+  50% {
+    filter: drop-shadow(0 0 30px rgba(0, 163, 224, 0.85)) drop-shadow(0 0 55px rgba(0, 84, 166, 0.5));
+  }
+}
+
+.animate-logo-glow {
+  animation: logoGlow 4s ease-in-out infinite;
+}
