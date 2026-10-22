@@ -42,7 +42,7 @@ export const Header: React.FC<HeaderProps> = ({
   return (
     <header
       id="app-header"
-      className="bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-b border-sky-100 dark:border-slate-800 sticky top-0 z-30 shadow-xs transition-colors"
+      className="bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-b border-sky-100 dark:border-slate-800 sticky top-0 z-40 shadow-xs transition-colors"
     >
       {/* Decorative top gradient line combining PT Air Bersih Jakarta Blue & Cheerful Sunny Yellow */}
       <div className="h-1.5 w-full bg-gradient-to-r from-[#002b5b] via-[#0054a6] via-[#00a3e0] to-[#f59e0b]" />
@@ -97,25 +97,7 @@ export const Header: React.FC<HeaderProps> = ({
             </div>
           </div>
 
-          {/* Center: Prominent Batas Domain Indicator */}
-          <div className="flex items-center justify-center my-1 lg:my-0 flex-1 max-w-xl">
-            <div
-              id="header-domain-boundary"
-              title="Batas Domain: Verifikasi Siklis Dokumen Teknis & Finansial PT Air Bersih Jakarta"
-              className="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-gradient-to-r from-sky-50 via-amber-50/50 to-blue-50/60 dark:from-slate-800/90 dark:via-amber-950/30 dark:to-slate-800/90 border border-amber-300/80 dark:border-amber-500/50 text-slate-800 dark:text-slate-200 shadow-2xs text-[11px] font-semibold"
-            >
-              <div className="w-2 h-2 rounded-full bg-amber-400 animate-pulse shrink-0 ring-2 ring-amber-300/40" />
-              <ShieldCheck className="w-3.5 h-3.5 text-amber-500 dark:text-amber-400 shrink-0" />
-              <div className="truncate">
-                <span className="font-bold text-[#0054a6] dark:text-cyan-300">Batas Domain:</span>{' '}
-                <span className="text-slate-700 dark:text-slate-200">
-                  PT Air Bersih Jakarta &bull; PMO Cyclical Justifikasi Teknis &amp; Finansial
-                </span>
-              </div>
-            </div>
-          </div>
-
-          {/* Right: Only Realtime Clock and Dark/Light Mode Toggle */}
+          {/* Right: Realtime Clock and Dark/Light Mode Toggle */}
           <div className="flex items-center space-x-2 shrink-0 ml-auto">
             {/* Real-time Date and Clock */}
             <RealTimeClock className="inline-flex" />
