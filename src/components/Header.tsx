@@ -47,9 +47,9 @@ export const Header: React.FC<HeaderProps> = ({
       {/* Running Text Marquee Banner */}
       <div className="bg-gradient-to-r from-blue-700 via-sky-600 to-amber-500 text-white font-extrabold text-[11px] py-1 px-3 overflow-hidden whitespace-nowrap shadow-xs flex items-center border-b border-white/20">
         <span className="bg-black/20 text-white px-2 py-0.5 rounded text-[9px] font-mono mr-2 shrink-0 animate-pulse">
-          PRIMA INFO 🚀
+          PRIMA 🚀
         </span>
-        {React.createElement('marquee' as any, { scrollamount: "5", className: "font-bold tracking-wide" }, "✨ Selamat datang di PRIMA - Project Records, Intelligence, Monitoring and Assurance. Sistem Verifikasi Pintar PMO Cyclical PT Air Bersih Jakarta! Pastikan dokumen Sinkron Anti Selisih! Kerja Cerdas, Air Bersih Tuntas, PRIMA Mantap! 💧🚀")}
+        {React.createElement('marquee' as any, { scrollamount: "5", className: "font-bold tracking-wide" }, "PRIMA: Project Records, Intelligence, Monitoring and Assurance - Sistem Verifikasi Dokumen Proyek PMO Cyclical PT Air Bersih Jakarta 🚀")}
       </div>
 
       <div className="w-full px-3 sm:px-5">

@@ -21,6 +21,7 @@ interface ProgramDatabaseViewProps {
   activePackageId: string;
   onSelectPackage: (id: string) => void;
   onOpenUpload: () => void;
+  onDownloadExcel: () => void;
   onDeletePackage: (id: string) => void;
 }
 
@@ -29,6 +30,7 @@ export const ProgramDatabaseView: React.FC<ProgramDatabaseViewProps> = ({
   activePackageId,
   onSelectPackage,
   onOpenUpload,
+  onDownloadExcel,
   onDeletePackage,
 }) => {
   const [searchQuery, setSearchQuery] = useState('');
@@ -68,6 +70,14 @@ export const ProgramDatabaseView: React.FC<ProgramDatabaseViewProps> = ({
           </div>
 
           <div className="flex items-center gap-3 shrink-0">
+            <button
+              type="button"
+              onClick={onDownloadExcel}
+              className="px-5 py-3 rounded-2xl bg-emerald-500 hover:bg-emerald-600 text-white font-extrabold text-xs shadow-lg flex items-center gap-2 transition-all cursor-pointer hover:scale-105 ring-2 ring-white/30"
+            >
+              <FileSpreadsheet className="w-4 h-4" />
+              <span>Unduh Kertas Kerja</span>
+            </button>
             <button
               type="button"
               onClick={onOpenUpload}

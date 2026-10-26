@@ -161,7 +161,6 @@ interface SidebarProps {
   onAddNewPackage: () => void;
   onOpenConfig: () => void;
   onOpenReset: () => void;
-  onDownloadExcel: () => void;
   result: VerificationResult | null;
   highExceptionsCount: number;
   isProcessing: boolean;
@@ -180,7 +179,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
   onAddNewPackage,
   onOpenConfig,
   onOpenReset,
-  onDownloadExcel,
   result,
   highExceptionsCount,
   isProcessing,
@@ -307,7 +305,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
         <div className="p-3.5 border-b border-[#0e355c] flex items-center justify-between shrink-0 bg-black/20">
           {!isCollapsed ? (
             <div className="flex items-center gap-2 min-w-0">
-              <div className="bg-white/95 rounded-lg p-1 shrink-0">
+              <div className="bg-white/10 rounded-lg p-1 shrink-0">
                 <DashboardLogo size="sm" showText={false} animated={true} className="h-6 w-auto" />
               </div>
               <div className="min-w-0">
@@ -321,7 +319,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
               </div>
             </div>
           ) : (
-            <div className="mx-auto bg-white/95 rounded-lg p-1">
+            <div className="mx-auto bg-white/10 rounded-lg p-1">
               <DashboardLogo size="sm" showText={false} animated={true} className="h-5 w-auto" />
             </div>
           )}
@@ -364,27 +362,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
         <div className="p-2.5 border-t border-[#0e355c] bg-slate-950/60 shrink-0">
           {!isCollapsed ? (
             <div className="space-y-2">
-              {/* Excel Download button */}
-              <button
-                type="button"
-                onClick={onDownloadExcel}
-                disabled={!result || isProcessing}
-                className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-xl text-xs font-bold text-white bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 shadow-sm transition-all disabled:opacity-40 cursor-pointer"
-              >
-                <FileSpreadsheet className="w-4 h-4 text-emerald-200 shrink-0" />
-                <span className="truncate">Unduh Kertas Kerja Excel</span>
-              </button>
 
-              {/* New Package Upload Button */}
-              <button
-                type="button"
-                onClick={onAddNewPackage}
-                title="Upload Pasangan Dokumen Baru"
-                className="w-full flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold text-white bg-gradient-to-r from-[#0054a6] via-[#0080c8] to-amber-500 hover:from-[#004690] hover:to-amber-600 shadow-sm transition-all cursor-pointer truncate"
-              >
-                <UploadCloud className="w-4 h-4 text-white shrink-0" />
-                <span className="truncate">+ Upload Pasangan Dokumen Baru</span>
-              </button>
 
               <div className="flex items-center justify-between pt-1 border-t border-slate-800/80 px-1">
                 <button
@@ -408,15 +386,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
             </div>
           ) : (
             <div className="space-y-2 flex flex-col items-center">
-              <button
-                type="button"
-                onClick={onDownloadExcel}
-                disabled={!result || isProcessing}
-                title="Unduh Kertas Kerja Excel"
-                className="w-10 h-10 rounded-xl bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 flex items-center justify-center transition-colors cursor-pointer disabled:opacity-40"
-              >
-                <FileSpreadsheet className="w-4 h-4" />
-              </button>
 
               <button
                 type="button"

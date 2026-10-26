@@ -454,7 +454,6 @@ export default function App() {
         onAddNewPackage={() => setShowUpload(true)}
         onOpenConfig={() => setShowConfig(true)}
         onOpenReset={() => setShowReset(true)}
-        onDownloadExcel={() => result && downloadVerificationExcel(result)}
         result={result}
         highExceptionsCount={highExceptionsCount}
         isProcessing={isProcessing}
@@ -785,6 +784,7 @@ export default function App() {
                           setActiveTab('dashboard');
                         }}
                         onOpenUpload={() => setShowUpload(true)}
+                        onDownloadExcel={() => result && downloadVerificationExcel(result)}
                         onDeletePackage={handleDeletePackage}
                       />
                     )}
