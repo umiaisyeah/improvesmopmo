@@ -175,6 +175,9 @@ export function performThreeWayReconciliation(
       deltaPct: Number(deltaPct.toFixed(1)),
       status,
       notes,
+      linkedBaId: jtItem.linkedBaId,
+      linkedBaItemName: jtItem.linkedBaItemName,
+      evidenceStatus: jtItem.evidenceStatus,
     });
   });
 

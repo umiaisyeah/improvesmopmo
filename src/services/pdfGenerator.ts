@@ -109,36 +109,41 @@ export function generateVerificationPdf(result: VerificationResult): jsPDF {
   // =========================================================================
   drawPageHeader(1);
 
-  // Document Title Section - positioned with safe vertical separation from status badge
-  let currentY = 27;
+  // Document Title Section - positioned with safe dynamic vertical separation
+  let currentY = 26;
+  const titleMaxWidth = pageWidth - marginX * 2 - 58; // leave space for status badge on the right
+
   doc.setTextColor(15, 23, 42); // slate-900
   doc.setFont('helvetica', 'bold');
-  doc.setFontSize(13);
-  doc.text('LAPORAN RINGKASAN EKSEKUTIF AUDIT & VERIFIKASI BAPL', marginX, currentY, { maxWidth: pageWidth - marginX * 2 - 58 });
+  doc.setFontSize(12);
+  const titleText = 'LAPORAN RINGKASAN EKSEKUTIF AUDIT & VERIFIKASI BAPL';
+  const titleLines = doc.splitTextToSize(titleText, titleMaxWidth);
+  doc.text(titleLines, marginX, currentY);
 
-  currentY += 6;
+  // Dynamically calculate currentY based on number of title lines
+  currentY += titleLines.length * 5 + 1.5;
+
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(8);
   doc.setTextColor(71, 85, 105); // slate-600
-  doc.text(
-    'Rangkuman evaluasi komparasi teknis, finansial, dan audit penelusuran dokumen lapangan.',
-    marginX,
-    currentY,
-    { maxWidth: pageWidth - marginX * 2 - 58 }
-  );
+  const subTitleText = 'Rangkuman evaluasi komparasi teknis, finansial, dan audit penelusuran dokumen lapangan.';
+  const subTitleLines = doc.splitTextToSize(subTitleText, titleMaxWidth);
+  doc.text(subTitleLines, marginX, currentY);
 
-  // Status Badge on the right - cleanly placed at y=24, completely separated from title text
+  currentY += subTitleLines.length * 3.8 + 3;
+
+  // Status Badge on the right - cleanly placed at y=25, completely separated from title text
   const isMatch = totalRab.delta_match;
   doc.setFillColor(isMatch ? 220 : 254, isMatch ? 252 : 242, isMatch ? 231 : 242);
   doc.setDrawColor(isMatch ? 34 : 225, isMatch ? 197 : 29, isMatch ? 94 : 72);
-  doc.roundedRect(pageWidth - marginX - 54, 24, 54, 9, 1.5, 1.5, 'FD');
+  doc.roundedRect(pageWidth - marginX - 54, 25, 54, 9, 1.5, 1.5, 'FD');
   doc.setTextColor(isMatch ? 22 : 153, isMatch ? 101 : 27, isMatch ? 52 : 27);
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(7.5);
   doc.text(
     isMatch ? 'STATUS: SINKRON & VALID' : 'STATUS: PERLU REVIEW',
     pageWidth - marginX - 27,
-    29.5,
+    30.5,
     { align: 'center' }
   );
 

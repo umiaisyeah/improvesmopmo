@@ -42,6 +42,29 @@ import {
 } from '../types';
 import { StatusBadge } from './TechnicalVerificationView';
 import { HighlightedText } from './HighlightedText';
+import { parseFlexibleDate } from '../utils/deadlineChecker';
+
+const INDONESIAN_MONTHS = [
+  'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
+  'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'
+];
+
+export function formatIndonesianDateLong(dateInput?: string, dayOffset: number = 0): string {
+  if (!dateInput || dateInput === '-' || dateInput === 'BELUM ADA DOKUMEN') {
+    return '14 Agustus 2026';
+  }
+
+  const parsed = parseFlexibleDate(dateInput) || new Date('2026-08-14');
+  if (dayOffset !== 0) {
+    parsed.setDate(parsed.getDate() + dayOffset);
+  }
+
+  const day = parsed.getDate();
+  const month = INDONESIAN_MONTHS[parsed.getMonth()];
+  const year = parsed.getFullYear();
+
+  return `${day} ${month} ${year}`;
+}
 
 export interface TraceabilityViewProps {
   records: TraceabilityRecord[];
@@ -117,7 +140,7 @@ export const TraceabilityView: React.FC<TraceabilityViewProps> = ({
         title: 'MC-0 (Mutual Check 0%) & Baseline Kontrak',
         subtitle: 'Kick-off Survey Lapangan Bersama & Penetapan Titik Nol',
         stageNumber: 1,
-        dateStr: '15 Juli 2026',
+        dateStr: formatIndonesianDateLong(project?.date, -30),
         docNumber: `BA-MC0/${projectCode}/VII/2026`,
         docCategory: 'Berita Acara Survey Bersama & Baseline DED',
         signatories: 'Kontraktor Pelaksana, Konsultan Pengawas, Tim Teknis PMO ABJ',
@@ -142,7 +165,7 @@ export const TraceabilityView: React.FC<TraceabilityViewProps> = ({
         title: 'Justifikasi Teknis (JusTek) & Justifikasi Finansial (JusFin)',
         subtitle: 'Kajian Rekayasa Lapangan, Perubahan Spesifikasi & Usulan CCO',
         stageNumber: 2,
-        dateStr: '28 Juli 2026',
+        dateStr: formatIndonesianDateLong(project?.date, -17),
         docNumber: `JUSTEK-${projectCode}/PLN/2026`,
         docCategory: 'Dokumen Justifikasi Teknis & Analisa Finansial (CCO)',
         signatories: 'Project Manager, Lead Technical Reviewer PMO, Financial Reviewer',
@@ -167,7 +190,7 @@ export const TraceabilityView: React.FC<TraceabilityViewProps> = ({
         title: 'Berita Acara Peninjauan / Opname Lapangan (BAPL)',
         subtitle: 'Pemeriksaan Fisik Terpasang, Pengukuran Aktual & Bukti Multi-Dokumen',
         stageNumber: 3,
-        dateStr: baseDate,
+        dateStr: formatIndonesianDateLong(project?.date, 0),
         docNumber: baplNumber,
         docCategory: 'Berita Acara Pemeriksaan Fisik Lapangan & Lembar Ukur',
         signatories: 'Site Inspector Kontraktor, Konsultan Pengawas Lapangan, Site Engineer PMO',
@@ -192,7 +215,7 @@ export const TraceabilityView: React.FC<TraceabilityViewProps> = ({
         title: 'Tes Komisioning & Pengujian Kelaikan Operasional',
         subtitle: 'Pengukuran Parameter Kinerja, Tahanan Tanah & Uji Beban',
         stageNumber: 4,
-        dateStr: '20 Agustus 2026',
+        dateStr: formatIndonesianDateLong(project?.date, 6),
         docNumber: `BA-COMM/${projectCode}/VIII/2026`,
         docCategory: 'Berita Acara Pengujian Kelaikan & Laporan Earth Tester',
         signatories: 'Lead Commissioning Engineer, Tim QA/QC, Konsultan Pengawas',
@@ -223,7 +246,7 @@ export const TraceabilityView: React.FC<TraceabilityViewProps> = ({
         title: 'MC-100 (Mutual Check 100%) & Serah Terima Pekerjaan (BAST)',
         subtitle: 'Rekonsiliasi Akhir Volume, As-Built Drawing & Penutupan Traceability',
         stageNumber: 5,
-        dateStr: '28 Agustus 2026',
+        dateStr: formatIndonesianDateLong(project?.date, 14),
         docNumber: `BA-MC100/${projectCode}/VIII/2026 & MCO Approval`,
         docCategory: 'Berita Acara Mutual Check 100% & BAST I (PHO)',
         signatories: 'Direktur Kontraktor, Kepala Departemen PMO ABJ, Tim SPI/BPK Auditor',
@@ -242,7 +265,7 @@ export const TraceabilityView: React.FC<TraceabilityViewProps> = ({
         status: 'COMPLETED',
       },
     ];
-  }, [records, projectCode, baplNumber, baseDate]);
+  }, [records, projectCode, baplNumber, project?.date]);
 
   // Active selected stage metadata
   const currentStageInfo = useMemo(() => {

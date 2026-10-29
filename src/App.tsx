@@ -954,7 +954,14 @@ export default function App() {
                     )}
 
                     {activeTab === 'exceptions' && (
-                      <ExceptionsView exceptions={result.exceptions} />
+                      <ExceptionsView
+                        exceptions={result.exceptions}
+                        rawBaplPages={result.raw_bapl}
+                        onNavigateToRawBapl={(page) => {
+                          setSelectedRawBaplPage(page);
+                          setActiveTab('raw_bapl');
+                        }}
+                      />
                     )}
 
                     {activeTab === 'raw_bapl' && (

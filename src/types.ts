@@ -272,6 +272,24 @@ export interface HowToIncorporateGuide {
   contract_amendment_clause: string;
 }
 
+export interface ExceptionDocumentReference {
+  source_name: string;
+  document_type?: 'BAPL' | 'JUSTEK' | 'JUSFIN' | 'RAB' | 'MC0' | 'MC100' | 'DRAWING' | 'SUPPORTING' | 'OCR';
+  page_or_sheet?: string | number;
+  section_or_clause?: string;
+  quoted_text?: string;
+  finding_marker?: string;
+  highlight_coords?: {
+    page?: number;
+    x?: number;
+    y?: number;
+    width?: number;
+    height?: number;
+    highlight_text?: string;
+  };
+  file_url_or_preview?: string;
+}
+
 export interface ExceptionRecord {
   exception_id: string;
   priority: ExceptionPriority;
@@ -287,11 +305,7 @@ export interface ExceptionRecord {
   error_detail?: string;
   substantiation_gap?: string;
   how_to_incorporate?: HowToIncorporateGuide;
-  document_reference?: {
-    source_name: string;
-    page_or_sheet?: string | number;
-    quoted_text?: string;
-  };
+  document_reference?: ExceptionDocumentReference;
 }
 
 export interface RawBaplPage {
@@ -719,6 +733,9 @@ export interface ReconciliationRow {
   deltaPct: number;
   status: ReconciliationStatus;
   notes: string;
+  linkedBaId?: string;
+  linkedBaItemName?: string;
+  evidenceStatus?: 'VERIFIED' | 'MISSING_BA' | 'NAME_MISMATCH' | 'VOLUME_OVER_CLAIM';
 }
 
 export interface DocumentChronologyCheck {

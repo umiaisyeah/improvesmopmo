@@ -5,13 +5,15 @@ import { RawBaplPage } from '../types';
 interface RawBaplViewProps {
   pages: RawBaplPage[];
   initialPage?: number;
+  highlightText?: string;
 }
 
-export const RawBaplView: React.FC<RawBaplViewProps> = ({ pages, initialPage = 1 }) => {
+export const RawBaplView: React.FC<RawBaplViewProps> = ({ pages, initialPage = 1, highlightText }) => {
   const [selectedPageKey, setSelectedPageKey] = useState<string>('');
   const [selectedSource, setSelectedSource] = useState<string>('ALL');
-  const [searchTerm, setSearchTerm] = useState<string>('');
+  const [searchTerm, setSearchTerm] = useState<string>(highlightText || '');
   const [copied, setCopied] = useState<boolean>(false);
+  const scrollRef = React.useRef<HTMLDivElement>(null);
 
   // Group pages by source document
   const sources = useMemo(() => {
@@ -40,12 +42,25 @@ export const RawBaplView: React.FC<RawBaplViewProps> = ({ pages, initialPage = 1
         const foundIdx = filteredPages.findIndex((p) => p.page === initialPage);
         if (foundIdx >= 0) {
           setSelectedPageKey(getPageKey(filteredPages[foundIdx], foundIdx));
-          return;
+        } else {
+            setSelectedPageKey(getPageKey(filteredPages[0], 0));
         }
+      } else {
+        setSelectedPageKey(getPageKey(filteredPages[0], 0));
       }
-      setSelectedPageKey(getPageKey(filteredPages[0], 0));
     }
   }, [initialPage, filteredPages]);
+
+  useEffect(() => {
+    if (highlightText && scrollRef.current) {
+        const el = scrollRef.current.querySelector(`[data-text*="${highlightText.toLowerCase()}"]`);
+        if (el) {
+            el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            el.classList.add('bg-yellow-200');
+            setTimeout(() => el.classList.remove('bg-yellow-200'), 3000);
+        }
+    }
+  }, [highlightText, selectedPageKey]);
 
   const activePageIdx = useMemo(() => {
     const idx = filteredPages.findIndex((p, i) => getPageKey(p, i) === selectedPageKey);
@@ -293,8 +308,13 @@ export const RawBaplView: React.FC<RawBaplViewProps> = ({ pages, initialPage = 1
             </div>
 
             {/* OCR Transcribed Text Box */}
-            <div className="bg-slate-950 border border-slate-800 rounded-xl p-6 font-mono text-xs text-slate-100 leading-relaxed whitespace-pre-wrap max-h-[580px] overflow-y-auto shadow-inner select-text">
-              {activePage?.extracted_text}
+            <div 
+              ref={scrollRef}
+              className="bg-slate-950 border border-slate-800 rounded-xl p-6 font-mono text-xs text-slate-100 leading-relaxed whitespace-pre-wrap max-h-[580px] overflow-y-auto shadow-inner select-text"
+            >
+              <div data-text={activePage?.extracted_text?.toLowerCase()}>
+                {activePage?.extracted_text}
+              </div>
             </div>
           </div>
 
