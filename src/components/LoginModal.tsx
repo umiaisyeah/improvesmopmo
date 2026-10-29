@@ -161,22 +161,9 @@ export const LoginModal: React.FC<LoginModalProps> = ({
                       </span>
                     </div>
 
-                    <h4 className="text-sm font-black text-slate-900 dark:text-white group-hover:text-[#0054a6] dark:group-hover:text-amber-400 transition-colors">
+                    <h4 className="text-base font-black text-slate-900 dark:text-white group-hover:text-[#0054a6] dark:group-hover:text-amber-400 transition-colors mt-1">
                       {meta.fullName}
                     </h4>
-
-                    <span className="text-[10.5px] font-bold text-slate-600 dark:text-slate-300 block mt-1">
-                      {meta.badge}
-                    </span>
-
-                    <ul className="mt-3 space-y-1.5 text-[10px] text-slate-600 dark:text-slate-400 border-t border-slate-200/60 dark:border-slate-800 pt-2.5">
-                      {meta.focusTasks.map((task, tIdx) => (
-                        <li key={tIdx} className="flex items-start gap-1">
-                          <span className="text-amber-500 shrink-0 font-bold">&bull;</span>
-                          <span className="leading-tight">{task}</span>
-                        </li>
-                      ))}
-                    </ul>
                   </div>
 
                   <div className="mt-4 pt-3 border-t border-slate-200/80 dark:border-slate-800">
