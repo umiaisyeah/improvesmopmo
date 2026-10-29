@@ -63,6 +63,8 @@ export interface ProjectIdentity {
   excelPoNumber?: string;
   identityMatchStatus: 'MATCH' | 'MISMATCH' | 'REVIEW';
   mismatchDetails?: string[];
+  deadlineDate?: string;
+  slaDays?: number;
 }
 
 export interface TechnicalChange {
@@ -400,15 +402,30 @@ export interface DocumentPackage {
   title: string;
   projectCode: string;
   projectName: string;
+  ipa?: IPALocation;
   baplFiles: { name: string; size: number; pageCount?: number }[];
   justekFiles?: { name: string; size: number }[];
   excelFiles?: { name: string; size: number }[];
   projectFiles?: { name: string; size: number; type?: string }[];
   excelFileName?: string;
   supportingFiles: { name: string; size: number }[];
+  deadlineDate?: string;
   createdAt: string;
   status: 'COMPLETED' | 'PROCESSING' | 'ERROR';
   result: VerificationResult;
+}
+
+export type UserPartyRole = 'PMO' | 'PLANNING' | 'PGO';
+
+export interface PrimaUser {
+  id: string;
+  name: string;
+  email: string;
+  role: UserPartyRole;
+  roleLabel: string;
+  department: string;
+  institution: string;
+  avatarInitials: string;
 }
 
 export interface UploadedFile {

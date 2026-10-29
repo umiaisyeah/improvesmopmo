@@ -26,6 +26,8 @@ import { VerificationResult } from '../types';
 import { formatRupiah, formatPercentage, formatQuantity } from '../services/normalizer';
 import { downloadVerificationExcel } from '../services/excelGenerator';
 import { downloadVerificationPdf } from '../services/pdfGenerator';
+import { DeadlineReminderCard } from './DeadlineReminderCard';
+import { calculateDeadlineInfo } from '../utils/deadlineChecker';
 
 interface DashboardViewProps {
   result: VerificationResult;
@@ -40,6 +42,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
 }) => {
   const { project, summary, total_rab, exceptions, technical_summary } = result;
   const [dashboardItemFilter, setDashboardItemFilter] = useState<'all' | 'changed'>('all');
+  const deadlineInfo = calculateDeadlineInfo(project, result.generated_at);
 
   return (
     <div className="space-y-6">
@@ -47,7 +50,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
       <div className="bg-gradient-to-r from-sky-50/70 via-white to-amber-50/40 rounded-2xl border-l-4 border-l-amber-400 border border-sky-200/80 p-5 sm:p-6 shadow-xs">
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 pb-5 border-b border-sky-100">
           <div>
-            <div className="flex items-center gap-2 mb-1.5">
+            <div className="flex flex-wrap items-center gap-2 mb-1.5">
               <span className="px-2.5 py-0.5 rounded-full text-xs font-bold tracking-wide bg-gradient-to-r from-[#0054a6] via-[#0080c8] to-amber-500 text-white font-mono shadow-2xs ring-1 ring-amber-300/40">
                 {project.projectCode}
               </span>
@@ -61,6 +64,25 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                 Identitas: {project.identityMatchStatus}
               </span>
               <span className="text-xs text-slate-400">• Rev: {project.revision}</span>
+
+              {/* Visual Deadline Flag Badge */}
+              {project.projectCode !== 'BELUM ADA DOKUMEN' && (
+                <span
+                  className={`px-2.5 py-0.5 rounded-full text-xs font-bold inline-flex items-center gap-1.5 shadow-2xs ${deadlineInfo.badgeClasses}`}
+                  title={`Batas Waktu SLA: ${deadlineInfo.deadlineDateStr}. ${deadlineInfo.recommendation}`}
+                >
+                  <span>
+                    {deadlineInfo.urgency === 'OVERDUE'
+                      ? '🚨'
+                      : deadlineInfo.urgency === 'CRITICAL'
+                      ? '⏳'
+                      : deadlineInfo.urgency === 'WARNING'
+                      ? '⚠️'
+                      : '✅'}
+                  </span>
+                  <span>{deadlineInfo.badgeLabel}</span>
+                </span>
+              )}
             </div>
             <h2 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">
               {project.projectName}
@@ -299,6 +321,33 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
           </div>
         )}
       </div>
+
+      {/* Visual Deadline & SLA Reminder Widget */}
+      {project.projectCode !== 'BELUM ADA DOKUMEN' ? (
+        <DeadlineReminderCard project={project} createdAt={result.generated_at} />
+      ) : (
+        <div className="rounded-2xl border border-dashed border-amber-300 dark:border-amber-700/60 bg-gradient-to-r from-amber-50/70 via-sky-50/50 to-white dark:from-slate-900 dark:to-slate-900 p-4 sm:p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-2xs">
+          <div className="flex items-start gap-3.5">
+            <div className="w-10 h-10 rounded-xl bg-amber-400 text-slate-950 flex items-center justify-center shrink-0 font-black shadow-xs">
+              <Clock className="w-5 h-5" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-amber-400 text-slate-950">
+                  Pemantauan Tenggat Waktu &amp; SLA
+                </span>
+                <span className="text-xs text-slate-500 dark:text-slate-400">Siaga Otomatis</span>
+              </div>
+              <h4 className="text-sm font-bold text-slate-900 dark:text-white mt-1">
+                Kalkulasi Deadline Otomatis Berdasarkan Tanggal Verifikasi BAPL
+              </h4>
+              <p className="text-xs text-slate-600 dark:text-slate-300 mt-0.5 max-w-2xl">
+                Setelah dokumen BAPL atau pasangan program diunggah, PRIMA akan otomatis menghitung masa tenggat SLA (7, 14, atau 30 hari), memberikan visual flag urgensi (H-3, H-0, Overdue), dan membunyikan alarm visual pada header.
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* DUAL-TRACK EXECUTIVE APPROVAL STATUS: JusTek vs JusFin */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

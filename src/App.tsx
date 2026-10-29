@@ -15,16 +15,16 @@ import {
   RotateCcw,
   CheckCircle2,
   Home,
+  Layers,
 } from 'lucide-react';
 import {
   VerificationResult,
   SystemConfig,
   HumanReview,
   DocumentPackage,
+  PrimaUser,
 } from './types';
 import { DEFAULT_CONFIG } from './config/defaultConfig';
-import { GOLDEN_TEST_CASE_RESULT } from './data/goldenTestCase';
-import { DEFAULT_PAKET_2 } from './data/paket2Data';
 import { runVerificationPipeline } from './services/verificationPipeline';
 import { downloadVerificationExcel } from './services/excelGenerator';
 import { downloadVerificationPdf } from './services/pdfGenerator';
@@ -39,6 +39,9 @@ import {
   exportPackagesBackup,
   importPackagesBackup,
 } from './services/storageService';
+import { autoCategorizeIpa } from './utils/ipaCategorizer';
+import { getStoredUser, logoutUser } from './services/authService';
+import { LoginModal } from './components/LoginModal';
 import { Header } from './components/Header';
 import { UploadSection } from './components/UploadSection';
 import { VerificationProgress } from './components/VerificationProgress';
@@ -58,53 +61,101 @@ import { Sidebar, TabType } from './components/Sidebar';
 import { WelcomeView } from './components/WelcomeView';
 import { ProgramDatabaseView } from './components/ProgramDatabaseView';
 
-const INITIAL_PACKAGE: DocumentPackage = {
-  id: 'pkg-46223A',
-  title: 'Program 1: Proyek 46223A - Sistem Proteksi Petir',
-  projectCode: '46223A',
-  projectName:
-    'Cyclical Maintenance - Penggantian IPP Area Gedung Distribusi, Filter, dan Substation',
-  baplFiles: [
-    { name: 'BAPL_Proyek_46223A_Fisik.pdf', size: 1428500, pageCount: 5 },
-  ],
-  excelFileName: 'RAB_JusTek_JusFin_46223A.xlsx',
-  supportingFiles: [
-    { name: 'DED_Drawing_Petir_46223A.pdf', size: 3120000 },
-    { name: 'MCO_Approval_PLN.pdf', size: 840000 },
-  ],
-  createdAt: '2026-08-14T09:30:00.000Z',
-  status: 'COMPLETED',
-  result: GOLDEN_TEST_CASE_RESULT,
+export const EMPTY_RESULT: VerificationResult = {
+  project: {
+    projectCode: 'BELUM ADA DOKUMEN',
+    projectName: 'Belum ada dokumen atau program yang diunggah ke PRIMA',
+    subproject: 'Instalasi Pengolahan Air (IPA) Jakarta',
+    location: 'Wilayah Operasional PAM Jaya / ABJ',
+    contractor: 'Belum Ditentukan',
+    poNumber: '-',
+    baplNumber: '-',
+    date: new Date().toISOString().split('T')[0],
+    revision: 'Rev.0',
+    packageContractInfo: 'Standar Proyek Cyclical',
+    identityMatchStatus: 'MATCH',
+  },
+  generated_at: new Date().toISOString(),
+  config: DEFAULT_CONFIG,
+  changes: [],
+  financial_items: [],
+  total_rab: {
+    rab_initial: 0,
+    rab_revised: 0,
+    system_calculated_delta: 0,
+    system_calculated_percentage: 0,
+    stated_jusfin_delta: 0,
+    delta_match: true,
+    threshold_percentage: 0.1,
+    threshold_exceeded: false,
+    proposal_modification_required: false,
+    status: 'VERIFIED',
+    explanation: 'Belum ada data anggaran yang diunggah.',
+  },
+  traceability: [],
+  evidences: [],
+  exceptions: [],
+  raw_bapl: [],
+  human_review: {
+    pmo_review_status: 'PENDING',
+    pmo_comments: 'Belum ada berkas dokumen yang diunggah untuk ditinjau.',
+    final_decision: 'PENDING',
+    reviewed_by: '-',
+    review_date: '-',
+  },
+  summary: {
+    total_items: 0,
+    verified: 0,
+    mismatch: 0,
+    need_support: 0,
+    review: 0,
+    not_found: 0,
+    ba_anomalies_count: 0,
+    unreferenced_financial_count: 0,
+  },
+  technical_summary: {
+    material_changes: 0,
+    quantity_changes: 0,
+    scope_changes: 0,
+    method_changes: 0,
+    dimension_changes: 0,
+  },
 };
 
 const STORAGE_KEY = 'bapl_verification_packages_v1';
 
 export default function App() {
-  // Synchronous initial state from localStorage if available (fast first render)
+  // Synchronous initial state from localStorage (excluding previous permanent packages pkg-46223A & pkg-46308)
   const [packages, setPackages] = useState<DocumentPackage[]>(() => {
     try {
       const saved = localStorage.getItem(STORAGE_KEY);
       if (saved !== null) {
         const parsed: DocumentPackage[] = JSON.parse(saved);
         if (Array.isArray(parsed)) {
-          return parsed;
+          return parsed.filter((p) => p.id !== 'pkg-46223A' && p.id !== 'pkg-46308');
         }
       }
     } catch (e) {
       console.warn('Initial localStorage read:', e);
     }
-    return [INITIAL_PACKAGE, DEFAULT_PAKET_2];
+    return [];
   });
 
   const [activePackageId, setActivePackageId] = useState<string>(() => {
     try {
       const savedActive = localStorage.getItem('bapl_active_package_id');
-      if (savedActive) return savedActive;
+      if (savedActive && savedActive !== 'pkg-46223A' && savedActive !== 'pkg-46308') {
+        return savedActive;
+      }
     } catch (e) {
       // ignore
     }
-    return 'pkg-46223A';
+    return '';
   });
+
+  // Authentication State with PMO, Planning, and PGO checking parties
+  const [currentUser, setCurrentUser] = useState<PrimaUser | null>(() => getStoredUser());
+  const [showLoginModal, setShowLoginModal] = useState<boolean>(false);
 
   const [importNotification, setImportNotification] = useState<string | null>(null);
   const isStorageReady = useRef<boolean>(false);
@@ -114,18 +165,20 @@ export default function App() {
     async function initStorage() {
       try {
         const stored = await loadAllStoredPackages();
-        if (stored && stored.length > 0) {
-          setPackages(stored);
+        const filtered = (stored || []).filter(
+          (p) => p.id !== 'pkg-46223A' && p.id !== 'pkg-46308'
+        );
+        if (filtered.length > 0) {
+          setPackages(filtered);
           const savedActive = await getStoredActivePackageId();
-          if (savedActive && stored.some((p) => p.id === savedActive)) {
+          if (savedActive && filtered.some((p) => p.id === savedActive)) {
             setActivePackageId(savedActive);
           } else {
-            setActivePackageId(stored[0].id);
+            setActivePackageId(filtered[0].id);
           }
         } else {
-          // Seed initial defaults into persistent storage
-          await persistAllPackages([INITIAL_PACKAGE, DEFAULT_PAKET_2]);
-          await persistActivePackageId(INITIAL_PACKAGE.id);
+          setPackages([]);
+          setActivePackageId('');
         }
       } catch (err) {
         console.error('Failed to initialize storage:', err);
@@ -184,6 +237,29 @@ export default function App() {
   };
 
   const handleEnterDashboard = () => {
+    if (!currentUser) {
+      setShowLoginModal(true);
+      return;
+    }
+    setHasEnteredDashboard(true);
+    setActiveTab('dashboard');
+    try {
+      sessionStorage.setItem('pmo_has_entered_dashboard', 'true');
+    } catch {}
+  };
+
+  const handleLogout = () => {
+    logoutUser();
+    setCurrentUser(null);
+    setHasEnteredDashboard(false);
+    try {
+      sessionStorage.removeItem('pmo_has_entered_dashboard');
+    } catch {}
+  };
+
+  const handleLoginSuccess = (user: PrimaUser) => {
+    setCurrentUser(user);
+    setShowLoginModal(false);
     setHasEnteredDashboard(true);
     setActiveTab('dashboard');
     try {
@@ -217,6 +293,8 @@ export default function App() {
         return 'Laman Selamat Datang';
       case 'dashboard':
         return 'Dashboard Executive';
+      case 'program_database':
+        return 'Database Program';
       case 'technical':
         return 'Verifikasi Teknis (JusTek)';
       case 'financial':
@@ -248,10 +326,10 @@ export default function App() {
     percentage: 0,
   });
 
-  // Current active package and active result
+  // Current active package and active result (falls back to EMPTY_RESULT to maintain layout structure)
   const activePackage =
     packages.find((p) => p.id === activePackageId) || packages[0] || null;
-  const result = activePackage ? activePackage.result : null;
+  const result = activePackage ? activePackage.result : EMPTY_RESULT;
 
   const handleRunPipeline = async (
     baplFiles: File[],
@@ -278,11 +356,20 @@ export default function App() {
       // Construct a new DocumentPackage
       const newPackageId = `pkg-${Date.now()}`;
       const projectCode = output.project.projectCode || `PRJ-${packages.length + 1}`;
+      const programLabel = packageName || `Program ${packages.length + 1}: ${output.project.projectName}`;
+
+      // Auto-categorize uploaded program into one of the 6 IPAs
+      const detectedIpa = autoCategorizeIpa(
+        `${programLabel} ${output.project.projectName} ${projectCode}`,
+        baplFiles.map((f) => f.name).join(' ')
+      );
+
       const newPackage: DocumentPackage = {
         id: newPackageId,
-        title: packageName || `Program ${packages.length + 1}: ${output.project.projectName}`,
+        title: programLabel,
         projectCode,
         projectName: output.project.projectName,
+        ipa: detectedIpa,
         baplFiles: baplFiles.map((f) => ({
           name: f.name,
           size: f.size,
@@ -313,37 +400,6 @@ export default function App() {
     }
   };
 
-  const handleLoadGoldenCase = async () => {
-    setIsProcessing(true);
-    setProgress({
-      step: 1,
-      stepName: 'Memuat Data Acuan',
-      detail: 'Menyiapkan paket acuan Proyek 46223A',
-      percentage: 30,
-    });
-
-    setTimeout(async () => {
-      setProgress({
-        step: 5,
-        stepName: 'Selesai',
-        detail: 'Paket acuan Proyek 46223A siap ditinjau',
-        percentage: 100,
-      });
-
-      const existingGolden = packages.find((p) => p.id === 'pkg-46223A');
-      if (existingGolden) {
-        setActivePackageId('pkg-46223A');
-      } else {
-        const updated = [INITIAL_PACKAGE, ...packages];
-        await persistAllPackages(updated);
-        setPackages(updated);
-        setActivePackageId(INITIAL_PACKAGE.id);
-      }
-      setActiveTab('dashboard');
-      setIsProcessing(false);
-    }, 400);
-  };
-
   const handleDeletePackage = async (packageId: string) => {
     const updated = packages.filter((p) => p.id !== packageId);
     await removePackageFromStorage(packageId);
@@ -368,10 +424,9 @@ export default function App() {
   };
 
   const handleResetToGolden = async () => {
-    await persistAllPackages([INITIAL_PACKAGE, DEFAULT_PAKET_2]);
-    await persistActivePackageId(INITIAL_PACKAGE.id);
-    setPackages([INITIAL_PACKAGE, DEFAULT_PAKET_2]);
-    setActivePackageId(INITIAL_PACKAGE.id);
+    await clearAllStoredPackages();
+    setPackages([]);
+    setActivePackageId('');
     setActiveTab('dashboard');
     setShowReset(false);
   };
@@ -422,14 +477,25 @@ export default function App() {
 
   if (!hasEnteredDashboard) {
     return (
-      <WelcomeView
-        onEnterDashboard={handleEnterDashboard}
-      />
+      <>
+        <WelcomeView
+          onEnterDashboard={handleEnterDashboard}
+          currentUser={currentUser}
+          onOpenLogin={() => setShowLoginModal(true)}
+        />
+        {showLoginModal && (
+          <LoginModal
+            currentUser={currentUser}
+            onLoginSuccess={handleLoginSuccess}
+            onClose={() => setShowLoginModal(false)}
+          />
+        )}
+      </>
     );
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-800 dark:text-slate-100 flex font-sans antialiased relative w-full max-w-full overflow-x-hidden selection:bg-amber-400 selection:text-slate-950 transition-colors duration-200">
+    <div className="h-screen max-h-screen overflow-hidden bg-slate-50 dark:bg-slate-950 text-slate-800 dark:text-slate-100 flex font-sans antialiased relative w-full max-w-full selection:bg-amber-400 selection:text-slate-950 transition-colors duration-200">
       {/* Interactive Collapsible Sidebar */}
       <Sidebar
         activeTab={activeTab}
@@ -464,150 +530,149 @@ export default function App() {
         onCloseMobile={() => setIsMobileSidebarOpen(false)}
       />
 
-      {/* Main Workspace Column - Fluid Layout Automatically Resizing on Sidebar Toggle */}
+      {/* Main Workspace Column - Fixed Viewport with Locked Header */}
       <div
-        className={`flex-1 flex flex-col min-w-0 transition-all duration-300 ease-in-out w-full max-w-full overflow-x-hidden ${
+        className={`flex-1 flex flex-col h-screen max-h-screen min-w-0 transition-all duration-300 ease-in-out w-full max-w-full overflow-hidden ${
           isSidebarCollapsed ? 'md:pl-20' : 'md:pl-64'
         }`}
       >
-        {/* Primary Header with Batas Domain, Clock, and Dark Mode Toggle */}
-        <Header
-          result={result}
-          onOpenConfig={() => setShowConfig(true)}
-          onOpenReview={() => setShowReview(true)}
-          onOpenReset={() => setShowReset(true)}
-          onDownloadPdf={() => result && downloadVerificationPdf(result)}
-          isProcessing={isProcessing}
-          onToggleSidebar={() => {
-            if (window.innerWidth < 768) {
-              setIsMobileSidebarOpen(!isMobileSidebarOpen);
-            } else {
-              setIsSidebarCollapsed(!isSidebarCollapsed);
-            }
-          }}
-          activeTabName={getActiveTabLabel(activeTab)}
-          activeProjectCode={activePackage?.projectCode}
-          onNavigateWelcome={handleNavigateWelcome}
-          isDarkMode={isDarkMode}
-          onToggleDarkMode={handleToggleDarkMode}
-        />
+        {/* Primary Header - Pinned and Locked at Top (Does Not Scroll) */}
+        <div className="shrink-0 z-40 w-full shadow-xs">
+          <Header
+            result={result}
+            onOpenConfig={() => setShowConfig(true)}
+            onOpenReview={() => setShowReview(true)}
+            onOpenReset={() => setShowReset(true)}
+            onDownloadPdf={() => result && downloadVerificationPdf(result)}
+            isProcessing={isProcessing}
+            onToggleSidebar={() => {
+              if (window.innerWidth < 768) {
+                setIsMobileSidebarOpen(!isMobileSidebarOpen);
+              } else {
+                setIsSidebarCollapsed(!isSidebarCollapsed);
+              }
+            }}
+            activeTabName={getActiveTabLabel(activeTab)}
+            activeProjectCode={activePackage?.projectCode}
+            onNavigateWelcome={handleNavigateWelcome}
+            isDarkMode={isDarkMode}
+            onToggleDarkMode={handleToggleDarkMode}
+            currentUser={currentUser}
+            onOpenLogin={() => setShowLoginModal(true)}
+            onLogout={handleLogout}
+          />
+        </div>
 
         {/* Expandable Upload Panel */}
         {showUpload && (
-          <UploadSection
-            onRunVerification={handleRunPipeline}
-            isProcessing={isProcessing}
-            onClose={() => setShowUpload(false)}
-            existingPackageCount={packages.length}
-          />
+          <div className="shrink-0 z-30 w-full overflow-y-auto max-h-[70vh]">
+            <UploadSection
+              onRunVerification={handleRunPipeline}
+              isProcessing={isProcessing}
+              onClose={() => setShowUpload(false)}
+              existingPackageCount={packages.length}
+            />
+          </div>
         )}
 
-        {/* Main Content Area - Fluid width without clipping */}
-        <main className="flex-1 w-full max-w-full px-3 sm:px-4 md:px-6 py-4 sm:py-6 space-y-5 overflow-x-hidden min-h-0">
-          {/* Success / Notification Banner for Backup Restore */}
-          {importNotification && (
-            <div className="bg-emerald-50 border border-emerald-200 rounded-2xl p-4 flex items-center justify-between gap-3 shadow-xs animate-in fade-in">
-              <div className="flex items-center gap-2.5">
-                <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0" />
-                <p className="text-xs font-semibold text-emerald-900">{importNotification}</p>
-              </div>
-              <button
-                type="button"
-                onClick={() => setImportNotification(null)}
-                className="text-xs text-emerald-700 hover:text-emerald-900 font-bold px-2 py-1 rounded-md hover:bg-emerald-100 transition-colors"
-              >
-                Tutup
-              </button>
-            </div>
-          )}
-
-          {/* Error Notification Banner if pipeline fails */}
-          {pipelineError && (
-            <div className="bg-rose-50 border border-rose-200 rounded-2xl p-4.5 flex items-start justify-between gap-3 shadow-xs">
-              <div className="flex items-start gap-3">
-                <ShieldAlert className="w-5 h-5 text-rose-600 shrink-0 mt-0.5" />
-                <div>
-                  <h4 className="text-sm font-bold text-rose-900">Kendala Pemrosesan Dokumen</h4>
-                  <p className="text-xs text-rose-700 mt-0.5 leading-relaxed">{pipelineError}</p>
+        {/* Scrollable Content Container (Header stays locked at top while this scrolls) */}
+        <div className="flex-1 overflow-y-auto overflow-x-hidden min-h-0 flex flex-col justify-between">
+          <main className="flex-1 w-full max-w-full px-3 sm:px-4 md:px-6 py-4 sm:py-6 space-y-5">
+            {/* Success / Notification Banner for Backup Restore */}
+            {importNotification && (
+              <div className="bg-emerald-50 border border-emerald-200 rounded-2xl p-4 flex items-center justify-between gap-3 shadow-xs animate-in fade-in">
+                <div className="flex items-center gap-2.5">
+                  <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0" />
+                  <p className="text-xs font-semibold text-emerald-900">{importNotification}</p>
                 </div>
-              </div>
-              <div className="flex items-center gap-2 shrink-0">
                 <button
                   type="button"
-                  onClick={() => {
-                    setPipelineError(null);
-                    setShowUpload(true);
-                  }}
-                  className="px-3 py-1.5 text-xs font-semibold rounded-lg bg-rose-600 text-white hover:bg-rose-700 transition-colors shadow-2xs"
-                >
-                  Unggah Ulang
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setPipelineError(null)}
-                  className="px-2.5 py-1.5 text-xs font-medium rounded-lg text-slate-500 hover:text-slate-700 hover:bg-rose-100/60 transition-colors"
+                  onClick={() => setImportNotification(null)}
+                  className="text-xs text-emerald-700 hover:text-emerald-900 font-bold px-2 py-1 rounded-md hover:bg-emerald-100 transition-colors"
                 >
                   Tutup
                 </button>
               </div>
-            </div>
-          )}
+            )}
 
-          {/* Progress Indicator for Live Processing */}
-          {isProcessing && (
-            <VerificationProgress
-              currentStep={progress.step}
-              stepName={progress.stepName}
-              detail={progress.detail}
-              percentage={progress.percentage}
-            />
-          )}
+            {/* Error Notification Banner if pipeline fails */}
+            {pipelineError && (
+              <div className="bg-rose-50 border border-rose-200 rounded-2xl p-4.5 flex items-start justify-between gap-3 shadow-xs">
+                <div className="flex items-start gap-3">
+                  <ShieldAlert className="w-5 h-5 text-rose-600 shrink-0 mt-0.5" />
+                  <div>
+                    <h4 className="text-sm font-bold text-rose-900">Kendala Pemrosesan Dokumen</h4>
+                    <p className="text-xs text-rose-700 mt-0.5 leading-relaxed">{pipelineError}</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2 shrink-0">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setPipelineError(null);
+                      setShowUpload(true);
+                    }}
+                    className="px-3 py-1.5 text-xs font-semibold rounded-lg bg-rose-600 text-white hover:bg-rose-700 transition-colors shadow-2xs"
+                  >
+                    Unggah Ulang
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setPipelineError(null)}
+                    className="px-2.5 py-1.5 text-xs font-medium rounded-lg text-slate-500 hover:text-slate-700 hover:bg-rose-100/60 transition-colors"
+                  >
+                    Tutup
+                  </button>
+                </div>
+              </div>
+            )}
 
-          {/* Empty State when all packages cleared */}
-          {packages.length === 0 && !isProcessing && (
-            <div className="bg-white rounded-2xl border border-slate-200 p-12 text-center max-w-xl mx-auto space-y-4 shadow-xs">
-              <input
-                type="file"
-                ref={emptyStateFileInputRef}
-                onChange={(e) => {
-                  const file = e.target.files?.[0];
-                  if (file) handleImportBackup(file);
-                  e.target.value = '';
-                }}
-                accept=".json,application/json"
-                className="hidden"
+            {/* Progress Indicator for Live Processing */}
+            {isProcessing && (
+              <VerificationProgress
+                currentStep={progress.step}
+                stepName={progress.stepName}
+                detail={progress.detail}
+                percentage={progress.percentage}
               />
-              <div className="w-14 h-14 rounded-2xl bg-sky-50 text-[#0054a6] flex items-center justify-center mx-auto">
-                <FolderSync className="w-7 h-7" />
+            )}
+
+            {/* Empty State Banner when no packages uploaded: Preserves Full Dashboard Layout */}
+            {packages.length === 0 && !isProcessing && (
+              <div className="bg-gradient-to-r from-sky-50 via-amber-50/50 to-white dark:from-slate-900 dark:via-slate-900 dark:to-slate-850 border border-amber-300 dark:border-amber-500/50 rounded-2xl p-4 sm:p-5 flex flex-col md:flex-row items-start md:items-center justify-between gap-4 shadow-xs">
+                <div className="flex items-start gap-3.5">
+                  <div className="w-10 h-10 rounded-xl bg-amber-400 text-slate-950 flex items-center justify-center shrink-0 font-black shadow-xs">
+                    <FolderSync className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <span className="px-2 py-0.5 rounded-full text-[10px] font-extrabold uppercase bg-amber-400 text-slate-950">
+                        Status: Belum Ada Dokumen
+                      </span>
+                      <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">
+                        Layout dashboard dipertahankan
+                      </span>
+                    </div>
+                    <h4 className="text-sm font-bold text-slate-900 dark:text-white mt-1">
+                      Belum Ada Pasangan Program atau Dokumen Proyek yang Diunggah
+                    </h4>
+                    <p className="text-xs text-slate-600 dark:text-slate-300 mt-0.5 max-w-2xl">
+                      Dashboard tetap menampilkan struktur lengkap dengan nilai awal 0. Setiap berkas yang Anda unggah akan otomatis dikategorikan ke salah satu dari 6 IPA Jakarta (IPA Buaran 1, 2, 3, IPA Pejompongan 1, 2, atau IPA Pulogadung).
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2 shrink-0 w-full md:w-auto">
+                  <button
+                    type="button"
+                    onClick={() => setShowUpload(true)}
+                    className="w-full md:w-auto inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-xs font-extrabold text-white bg-gradient-to-r from-[#0054a6] via-[#0080c8] to-amber-500 hover:from-[#004690] hover:to-amber-600 shadow-xs ring-2 ring-amber-400/30 transition-all cursor-pointer"
+                  >
+                    <UploadCloud className="w-4 h-4" />
+                    <span>Upload Program / Dokumen</span>
+                  </button>
+                </div>
               </div>
-              <div>
-                <h3 className="text-base font-bold text-slate-900">
-                  Belum Ada Pasangan Dokumen
-                </h3>
-                <p className="text-xs text-slate-500 mt-1 max-w-md mx-auto">
-                  Sistem telah di-reset. Silakan upload pasangan dokumen BAPL, Justek, Jusfin &amp; RAB menggunakan tombol di bawah atau pulihkan dari file cadangan JSON.
-                </p>
-              </div>
-              <div className="flex flex-wrap items-center justify-center gap-3 pt-2">
-                <button
-                  type="button"
-                  onClick={() => setShowUpload(true)}
-                  className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-extrabold text-white bg-gradient-to-r from-[#0054a6] via-[#0080c8] to-amber-500 hover:from-[#004690] hover:to-amber-600 shadow-xs ring-2 ring-amber-400/30 transition-all cursor-pointer"
-                >
-                  <UploadCloud className="w-4 h-4" />
-                  <span>Upload Dokumen Sekarang</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => emptyStateFileInputRef.current?.click()}
-                  className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-semibold text-slate-700 hover:bg-slate-100 border border-slate-200 transition-colors cursor-pointer"
-                >
-                  <Download className="w-3.5 h-3.5 text-slate-500 rotate-180" />
-                  <span>Pulihkan Cadangan (JSON)</span>
-                </button>
-              </div>
-            </div>
-          )}
+            )}
 
           {/* Verification Workspace (Dashboard, Technical, Financial, etc.) */}
           <div className="space-y-5">
@@ -649,7 +714,7 @@ export default function App() {
                       id="tab-dashboard"
                       type="button"
                       onClick={() => setActiveTab('dashboard')}
-                      className={`px-3.5 py-2 rounded-xl text-xs font-bold flex items-center gap-2 whitespace-nowrap transition-all ${
+                      className={`px-3.5 py-2 rounded-xl text-xs font-bold flex items-center gap-2 whitespace-nowrap transition-all cursor-pointer ${
                         activeTab === 'dashboard'
                           ? 'bg-gradient-to-r from-[#0054a6] via-[#0077c8] to-amber-500 text-white shadow-xs font-bold'
                           : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100 dark:text-slate-300 dark:hover:text-white dark:hover:bg-slate-800'
@@ -657,6 +722,23 @@ export default function App() {
                     >
                       <LayoutDashboard className="w-4 h-4" />
                       <span>Executive Dashboard</span>
+                    </button>
+
+                    <button
+                      id="tab-program_database"
+                      type="button"
+                      onClick={() => setActiveTab('program_database')}
+                      className={`px-3.5 py-2 rounded-xl text-xs font-bold flex items-center gap-2 whitespace-nowrap transition-all cursor-pointer ${
+                        activeTab === 'program_database'
+                          ? 'bg-gradient-to-r from-[#0054a6] via-[#0077c8] to-amber-500 text-white shadow-xs font-bold'
+                          : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100 dark:text-slate-300 dark:hover:text-white dark:hover:bg-slate-800'
+                      }`}
+                    >
+                      <Layers className="w-4 h-4" />
+                      <span>Database Program</span>
+                      <span className="px-1.5 py-0.2 rounded-full text-[10px] bg-white/20 text-white font-bold">
+                        {packages.length}
+                      </span>
                     </button>
 
                     <button
@@ -866,8 +948,9 @@ export default function App() {
           </div>
         </footer>
       </div>
+    </div>
 
-      {/* Modals */}
+    {/* Modals */}
       {showReview && result && (
         <HumanReviewModal
           initialReview={result.human_review}
@@ -903,6 +986,14 @@ export default function App() {
           onResetToGolden={handleResetToGolden}
           onClearAll={handleClearAll}
           onClose={() => setShowReset(false)}
+        />
+      )}
+
+      {showLoginModal && (
+        <LoginModal
+          currentUser={currentUser}
+          onLoginSuccess={handleLoginSuccess}
+          onClose={() => setShowLoginModal(false)}
         />
       )}
 

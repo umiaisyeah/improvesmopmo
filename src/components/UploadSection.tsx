@@ -160,35 +160,64 @@ export const UploadSection: React.FC<UploadSectionProps> = ({
           </div>
         </div>
 
-        {/* Package Title / Identifier Input */}
-        <div className="bg-white rounded-xl border border-slate-200 p-4 flex flex-col sm:flex-row sm:items-center gap-3">
-          <label className="text-xs font-bold text-slate-700 whitespace-nowrap flex items-center gap-1.5">
-            <Layers className="w-4 h-4 text-blue-600" />
-            Nama / Label Pasangan Dokumen:
-          </label>
-          <div className="flex-1 relative flex items-center">
-            <input
-              id="input-package-name"
-              type="text"
-              value={packageName}
-              onChange={(e) => setPackageName(e.target.value)}
-              placeholder={`Contoh: Program ${existingPackageCount + 1}: Proyek 46308 - Rehabilitasi Backwash & Pompa`}
-              className="w-full pl-3 pr-8 py-2 text-xs rounded-lg border border-slate-200 bg-slate-50 focus:bg-white focus:outline-hidden focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 text-slate-900 font-semibold transition-all"
-            />
-            {packageName && (
-              <button
-                type="button"
-                onClick={() => setPackageName('')}
-                className="absolute right-2.5 text-slate-400 hover:text-slate-600 p-0.5 rounded cursor-pointer"
-                title="Kosongkan nama paket"
-              >
-                <X className="w-3.5 h-3.5" />
-              </button>
-            )}
+        {/* Package Title / Identifier Input & 6 IPA Quick Selector */}
+        <div className="bg-white rounded-xl border border-slate-200 p-4 space-y-2.5">
+          <div className="flex flex-col sm:flex-row sm:items-center gap-3">
+            <label className="text-xs font-bold text-slate-700 whitespace-nowrap flex items-center gap-1.5">
+              <Layers className="w-4 h-4 text-blue-600" />
+              Nama / Label Pasangan Dokumen:
+            </label>
+            <div className="flex-1 relative flex items-center">
+              <input
+                id="input-package-name"
+                type="text"
+                value={packageName}
+                onChange={(e) => setPackageName(e.target.value)}
+                placeholder={`Contoh: Program ${existingPackageCount + 1}: IPA Buaran 1 - Rehabilitasi Pompa & Backwash`}
+                className="w-full pl-3 pr-8 py-2 text-xs rounded-lg border border-slate-200 bg-slate-50 focus:bg-white focus:outline-hidden focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 text-slate-900 font-semibold transition-all"
+              />
+              {packageName && (
+                <button
+                  type="button"
+                  onClick={() => setPackageName('')}
+                  className="absolute right-2.5 text-slate-400 hover:text-slate-600 p-0.5 rounded cursor-pointer"
+                  title="Kosongkan nama paket"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              )}
+            </div>
+            <span className="text-[11px] text-slate-400 hidden lg:inline whitespace-nowrap">
+              Otomatis terkategori ke salah satu dari 6 IPA
+            </span>
           </div>
-          <span className="text-[11px] text-slate-400 hidden lg:inline whitespace-nowrap">
-            Tersimpan independen untuk setiap paket
-          </span>
+
+          <div className="flex flex-wrap items-center gap-1.5 pt-1 border-t border-slate-100">
+            <span className="text-[10px] text-slate-400 font-semibold uppercase tracking-wider mr-1">
+              Pilih / Sisipkan IPA:
+            </span>
+            {[
+              'IPA Buaran 1',
+              'IPA Buaran 2',
+              'IPA Buaran 3',
+              'IPA Pejompongan 1',
+              'IPA Pejompongan 2',
+              'IPA Pulogadung',
+            ].map((ipa) => (
+              <button
+                key={ipa}
+                type="button"
+                onClick={() => {
+                  if (!packageName.includes(ipa)) {
+                    setPackageName(`Program ${existingPackageCount + 1}: ${ipa} - ${packageName.replace(/^Program\s*\d*:\s*/, '') || 'Pemeliharaan Fasilitas'}`);
+                  }
+                }}
+                className="px-2 py-0.5 rounded-md text-[10px] font-bold bg-sky-50 text-sky-800 hover:bg-sky-100 border border-sky-200 transition-colors cursor-pointer"
+              >
+                + {ipa}
+              </button>
+            ))}
+          </div>
         </div>
 
         {/* Program Domain & Clear Boundary Shield Banner */}

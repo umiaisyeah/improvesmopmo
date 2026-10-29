@@ -237,7 +237,7 @@ function deterministicBaplExtractor(
 
   // Extract Date
   let date = new Date().toISOString().split('T')[0];
-  const dateMatch = fullText.match(/(?:tanggal|tgl|date)\s*[:=]?\s*([0-9]{1,2}\s+[A-Za-z]+\s+[0-9]{4}|[0-9]{4}-[0-9]{2}-[0-9]{2})/i);
+  const dateMatch = fullText.match(/(?:tanggal|tgl|date)\s*[:=]?\s*([0-9]{1,2}[\s/\-][A-Za-z0-9]+[\s/\-][0-9]{4}|[0-9]{4}-[0-9]{2}-[0-9]{2})/i);
   if (dateMatch && dateMatch[1]?.trim()) {
     date = dateMatch[1].trim();
   }

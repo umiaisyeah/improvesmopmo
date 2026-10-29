@@ -23,6 +23,7 @@ import {
 import { DocumentPackage } from '../types';
 import { downloadVerificationExcel } from '../services/excelGenerator';
 import { downloadVerificationPdf } from '../services/pdfGenerator';
+import { calculateDeadlineInfo } from '../utils/deadlineChecker';
 
 interface DocumentPackageBarProps {
   packages: DocumentPackage[];
@@ -191,6 +192,8 @@ export const DocumentPackageBar: React.FC<DocumentPackageBarProps> = ({
           const deltaPct = pkg.result.total_rab.system_calculated_percentage * 100;
           const withinThreshold = !pkg.result.total_rab.threshold_exceeded;
 
+          const dInfo = calculateDeadlineInfo(pkg.result?.project, pkg.createdAt);
+
           return (
             <div
               key={pkg.id}
@@ -198,13 +201,17 @@ export const DocumentPackageBar: React.FC<DocumentPackageBarProps> = ({
               className={`cursor-pointer rounded-xl border p-3.5 transition-all flex flex-col justify-between relative group ${
                 isActive
                   ? 'border-blue-600 bg-blue-50/20 shadow-xs ring-2 ring-blue-500/20'
+                  : dInfo.isOverdue
+                  ? 'border-rose-300 hover:border-rose-400 bg-rose-50/10'
+                  : dInfo.isNearDeadline
+                  ? 'border-amber-300 hover:border-amber-400 bg-amber-50/10'
                   : 'border-slate-200 hover:border-slate-300 bg-white hover:bg-slate-50/60'
               }`}
             >
               <div>
                 {/* Status & Package Label */}
                 <div className="flex items-center justify-between mb-2">
-                  <div className="flex items-center space-x-2">
+                  <div className="flex items-center space-x-1.5 flex-wrap gap-y-1">
                     <span
                       className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
                         isActive
@@ -216,6 +223,13 @@ export const DocumentPackageBar: React.FC<DocumentPackageBarProps> = ({
                     </span>
                     <span className="text-xs font-mono font-bold text-slate-800">
                       {pkg.projectCode || 'PROYEK'}
+                    </span>
+                    {/* Deadline Flag */}
+                    <span
+                      className={`text-[9px] font-black px-1.5 py-0.2 rounded-full ${dInfo.badgeClasses}`}
+                      title={`Tenggat SLA: ${dInfo.deadlineDateStr}. ${dInfo.recommendation}`}
+                    >
+                      {dInfo.shortBadge}
                     </span>
                   </div>
 

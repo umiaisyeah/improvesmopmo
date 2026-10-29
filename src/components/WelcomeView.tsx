@@ -8,13 +8,18 @@ import {
   Sparkles,
 } from 'lucide-react';
 import { DashboardLogo } from './DashboardLogo';
+import { PrimaUser } from '../types';
 
 interface WelcomeViewProps {
   onEnterDashboard: () => void;
+  currentUser?: PrimaUser | null;
+  onOpenLogin?: () => void;
 }
 
 export const WelcomeView: React.FC<WelcomeViewProps> = ({
   onEnterDashboard,
+  currentUser,
+  onOpenLogin,
 }) => {
   return (
     <div className="relative h-screen max-h-screen w-full flex flex-col justify-between overflow-hidden bg-gradient-to-b from-[#001733] via-[#002b5b] to-[#001026] text-white selection:bg-amber-400 selection:text-slate-950">
@@ -133,16 +138,57 @@ export const WelcomeView: React.FC<WelcomeViewProps> = ({
         </div>
 
         {/* Action Button - Enter Dashboard with Playful Blue & Yellow Gradient */}
-        <div className="flex items-center justify-center w-full sm:w-auto">
-          <button
-            type="button"
-            id="btn-enter-dashboard"
-            onClick={onEnterDashboard}
-            className="w-full sm:w-auto px-7 py-2.5 sm:py-3 rounded-xl text-xs sm:text-sm font-extrabold text-white bg-gradient-to-r from-[#0054a6] via-[#009ee2] to-amber-500 hover:from-[#004690] hover:via-[#008cc8] hover:to-amber-400 shadow-[0_0_25px_rgba(251,191,36,0.35)] hover:shadow-[0_0_35px_rgba(251,191,36,0.55)] ring-2 ring-amber-400/30 flex items-center justify-center space-x-2 transition-all transform hover:-translate-y-0.5 active:translate-y-0 cursor-pointer"
-          >
-            <span>Masuk ke Dashboard</span>
-            <ArrowRight className="w-4 h-4 text-white" />
-          </button>
+        <div className="flex flex-col items-center justify-center gap-2.5 w-full sm:w-auto">
+          {currentUser ? (
+            <div className="flex flex-col sm:flex-row items-center gap-2 w-full sm:w-auto">
+              <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-white/10 border border-white/20 text-xs text-white">
+                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                <span className="font-semibold text-slate-200">Pihak Terpilih:</span>
+                <span className="font-bold text-amber-300">{currentUser.roleLabel || `Pihak ${currentUser.role}`}</span>
+                <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-amber-400 text-slate-950">
+                  {currentUser.role}
+                </span>
+                {onOpenLogin && (
+                  <button
+                    type="button"
+                    onClick={onOpenLogin}
+                    className="text-[10px] text-cyan-300 underline hover:text-cyan-200 ml-1 cursor-pointer"
+                  >
+                    Ganti
+                  </button>
+                )}
+              </div>
+              <button
+                type="button"
+                id="btn-enter-dashboard"
+                onClick={onEnterDashboard}
+                className="w-full sm:w-auto px-7 py-2.5 sm:py-3 rounded-xl text-xs sm:text-sm font-extrabold text-white bg-gradient-to-r from-[#0054a6] via-[#009ee2] to-amber-500 hover:from-[#004690] hover:via-[#008cc8] hover:to-amber-400 shadow-[0_0_25px_rgba(251,191,36,0.35)] hover:shadow-[0_0_35px_rgba(251,191,36,0.55)] ring-2 ring-amber-400/30 flex items-center justify-center space-x-2 transition-all transform hover:-translate-y-0.5 active:translate-y-0 cursor-pointer"
+              >
+                <span>Masuk ke Dashboard PRIMA</span>
+                <ArrowRight className="w-4 h-4 text-white" />
+              </button>
+            </div>
+          ) : (
+            <div className="flex flex-col items-center gap-2 w-full sm:w-auto">
+              <button
+                type="button"
+                id="btn-enter-dashboard"
+                onClick={onOpenLogin ? onOpenLogin : onEnterDashboard}
+                className="w-full sm:w-auto px-7 py-2.5 sm:py-3 rounded-xl text-xs sm:text-sm font-extrabold text-white bg-gradient-to-r from-[#0054a6] via-[#009ee2] to-amber-500 hover:from-[#004690] hover:via-[#008cc8] hover:to-amber-400 shadow-[0_0_25px_rgba(251,191,36,0.35)] hover:shadow-[0_0_35px_rgba(251,191,36,0.55)] ring-2 ring-amber-400/30 flex items-center justify-center space-x-2 transition-all transform hover:-translate-y-0.5 active:translate-y-0 cursor-pointer"
+              >
+                <span>Login Akun Pengecek &bull; Masuk PRIMA</span>
+                <ArrowRight className="w-4 h-4 text-white" />
+              </button>
+              <div className="flex items-center gap-1.5 text-[11px] text-cyan-200/80">
+                <span>Pihak Pengecek Terdaftar:</span>
+                <span className="font-semibold text-white">PMO</span>
+                <span>&bull;</span>
+                <span className="font-semibold text-white">Planning</span>
+                <span>&bull;</span>
+                <span className="font-semibold text-white">PGO</span>
+              </div>
+            </div>
+          )}
         </div>
       </main>
 

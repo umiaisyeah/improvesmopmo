@@ -43,46 +43,24 @@ export const ResetModal: React.FC<ResetModalProps> = ({
         </div>
 
         <div className="space-y-3">
-          {/* Option 1: Reset to Golden Case */}
-          <button
-            type="button"
-            onClick={() => {
-              onResetToGolden();
-              onClose();
-            }}
-            className="w-full text-left p-3.5 rounded-xl border border-slate-200 hover:border-amber-400 hover:bg-amber-50/50 transition-all flex items-start space-x-3 group"
-          >
-            <div className="w-8 h-8 rounded-lg bg-amber-100 text-amber-700 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
-              <Sparkles className="w-4 h-4" />
-            </div>
-            <div className="flex-1 min-w-0">
-              <span className="text-xs font-bold text-slate-900 block group-hover:text-amber-950">
-                1. Reset ke Golden Test Case 46223A
-              </span>
-              <p className="text-[11px] text-slate-500 mt-0.5 leading-relaxed">
-                Kembalikan sistem ke data acuan Proyek 46223A (Sistem Proteksi Petir, RAB Rp 988jt vs Rp 978jt, 5 temuan teknis & matriks lengkap).
-              </p>
-            </div>
-          </button>
-
-          {/* Option 2: Clear All */}
+          {/* Option: Clear All */}
           <button
             type="button"
             onClick={() => {
               onClearAll();
               onClose();
             }}
-            className="w-full text-left p-3.5 rounded-xl border border-rose-200 hover:border-rose-400 hover:bg-rose-50/50 transition-all flex items-start space-x-3 group"
+            className="w-full text-left p-3.5 rounded-xl border border-rose-200 hover:border-rose-400 hover:bg-rose-50/50 transition-all flex items-start space-x-3 group cursor-pointer"
           >
             <div className="w-8 h-8 rounded-lg bg-rose-100 text-rose-700 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
               <Trash2 className="w-4 h-4" />
             </div>
             <div className="flex-1 min-w-0">
               <span className="text-xs font-bold text-rose-900 block group-hover:text-rose-950">
-                2. Kosongkan Semua Data &amp; Mulai dari Nol (Permanen)
+                Kosongkan Semua Data &amp; Reset ke Awal (Bersih)
               </span>
               <p className="text-[11px] text-slate-500 mt-0.5 leading-relaxed">
-                Hapus seluruh riwayat pasangan dokumen secara permanen dari browser. Data yang di-reset tidak akan dimunculkan kembali saat halaman dimuat ulang.
+                Hapus seluruh daftar pasangan dokumen dari penyimpanan lokal. Dashboard akan mempertahankan tampilan layout siap menerima unggahan program baru.
               </p>
             </div>
           </button>

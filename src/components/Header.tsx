@@ -8,10 +8,14 @@ import {
   ShieldCheck,
   CheckCircle2,
   FileText,
+  LogOut,
+  User,
+  Users,
 } from 'lucide-react';
-import { VerificationResult } from '../types';
+import { VerificationResult, PrimaUser, UserPartyRole } from '../types';
 import { DashboardLogo } from './DashboardLogo';
 import { RealTimeClock } from './RealTimeClock';
+import { calculateDeadlineInfo } from '../utils/deadlineChecker';
 
 interface HeaderProps {
   result: VerificationResult | null;
@@ -26,6 +30,9 @@ interface HeaderProps {
   onNavigateWelcome?: () => void;
   isDarkMode: boolean;
   onToggleDarkMode: () => void;
+  currentUser?: PrimaUser | null;
+  onOpenLogin?: () => void;
+  onLogout?: () => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -41,18 +48,42 @@ export const Header: React.FC<HeaderProps> = ({
   onNavigateWelcome,
   isDarkMode,
   onToggleDarkMode,
+  currentUser,
+  onOpenLogin,
+  onLogout,
 }) => {
+  const isDocumentUploaded = Boolean(
+    result?.project?.projectCode &&
+    result.project.projectCode !== 'BELUM ADA DOKUMEN' &&
+    result.project.baplNumber &&
+    result.project.baplNumber !== '-'
+  );
+  const deadlineInfo = isDocumentUploaded && result?.project
+    ? calculateDeadlineInfo(result.project, result.generated_at)
+    : null;
+  const marqueeText = deadlineInfo && (deadlineInfo.isNearDeadline || deadlineInfo.isOverdue)
+    ? `⚠️ PENGINGAT DEADLINE: ${result?.project?.projectCode} (${result?.project?.projectName}) - ${deadlineInfo.badgeLabel} Menuju Batas Waktu SLA (${deadlineInfo.deadlineDateStr})! • PRIMA: Project Records, Intelligence, Monitoring and Assurance - PT Air Bersih Jakarta 🚀`
+    : "PRIMA: Project Records, Intelligence, Monitoring and Assurance - Sistem Verifikasi Dokumen Proyek PMO Cyclical PT Air Bersih Jakarta 🚀";
+
   return (
     <header
       id="app-header"
       className="bg-gradient-to-r from-[#002b5b] via-[#0054a6] to-[#f59e0b] dark:from-[#041527] dark:via-[#07264a] dark:to-[#92400e] text-white shadow-md sticky top-0 z-50 transition-colors"
     >
-      {/* Running Text Marquee Banner */}
-      <div className="bg-gradient-to-r from-blue-700 via-sky-600 to-amber-500 text-white font-extrabold text-[11px] py-1 px-3 overflow-hidden whitespace-nowrap shadow-xs flex items-center border-b border-white/20">
-        <span className="bg-black/20 text-white px-2 py-0.5 rounded text-[9px] font-mono mr-2 shrink-0 animate-pulse">
-          PRIMA 🚀
+      {/* Running Text Marquee Banner with Deadline Alert Support */}
+      <div className={`text-white font-extrabold text-[11px] py-1 px-3 overflow-hidden whitespace-nowrap shadow-xs flex items-center border-b border-white/20 ${
+        deadlineInfo?.isOverdue
+          ? 'bg-gradient-to-r from-rose-700 via-red-600 to-amber-600'
+          : deadlineInfo?.isNearDeadline
+          ? 'bg-gradient-to-r from-amber-600 via-orange-600 to-blue-700'
+          : 'bg-gradient-to-r from-blue-700 via-sky-600 to-amber-500'
+      }`}>
+        <span className={`px-2 py-0.5 rounded text-[9px] font-mono mr-2 shrink-0 animate-pulse ${
+          deadlineInfo?.isNearDeadline || deadlineInfo?.isOverdue ? 'bg-red-900 text-amber-200 ring-1 ring-amber-300' : 'bg-black/20 text-white'
+        }`}>
+          {deadlineInfo?.isOverdue ? '🚨 DEADLINE OVERDUE' : deadlineInfo?.isNearDeadline ? '⏳ MENDEKATI DEADLINE' : 'PRIMA 🚀'}
         </span>
-        {React.createElement('marquee' as any, { scrollamount: "5", className: "font-bold tracking-wide" }, "PRIMA: Project Records, Intelligence, Monitoring and Assurance - Sistem Verifikasi Dokumen Proyek PMO Cyclical PT Air Bersih Jakarta 🚀")}
+        {React.createElement('marquee' as any, { scrollamount: "5", className: "font-bold tracking-wide" }, marqueeText)}
       </div>
 
       <div className="w-full px-3 sm:px-5">
@@ -117,11 +148,87 @@ export const Header: React.FC<HeaderProps> = ({
               <span className="font-bold text-white bg-black/20 px-2.5 py-1 rounded-lg truncate">
                 {activeTabName || 'Dashboard Executive'}
               </span>
+
+              {/* Deadline Flag Chip in Header */}
+              {deadlineInfo && (
+                <span
+                  className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider shadow-2xs ${deadlineInfo.badgeClasses}`}
+                  title={`Batas Waktu SLA: ${deadlineInfo.deadlineDateStr} (${deadlineInfo.recommendation})`}
+                >
+                  <span>{deadlineInfo.urgency === 'OVERDUE' ? '🚨' : deadlineInfo.urgency === 'CRITICAL' ? '⏳' : deadlineInfo.urgency === 'WARNING' ? '⚠️' : '✅'}</span>
+                  <span>{deadlineInfo.shortBadge} Deadline</span>
+                </span>
+              )}
             </div>
           </div>
 
-          {/* Right: PDF export, Realtime Clock and Dark/Light Mode Toggle */}
+          {/* Right: PDF export, Checker Profile Badge, Realtime Clock and Dark/Light Mode Toggle */}
           <div className="flex items-center space-x-2 shrink-0 ml-auto">
+            {/* Active Checking Party Profile / Login Button */}
+            {currentUser ? (
+              <div className="flex items-center gap-1.5">
+                <button
+                  type="button"
+                  onClick={onOpenLogin}
+                  className="flex items-center gap-2 px-2.5 py-1.5 rounded-xl bg-black/25 hover:bg-black/45 border border-white/20 transition-all cursor-pointer shadow-2xs group"
+                  title={`Pemeriksa Aktif: ${currentUser.name} (${currentUser.roleLabel}). Klik untuk beralih peran antara PMO, Planning, atau PGO.`}
+                >
+                  <div
+                    className={`w-6 h-6 rounded-lg flex items-center justify-center font-black text-[10px] text-white shadow-xs ${
+                      currentUser.role === 'PMO'
+                        ? 'bg-blue-600 ring-1 ring-blue-300'
+                        : currentUser.role === 'PLANNING'
+                        ? 'bg-emerald-600 ring-1 ring-emerald-300'
+                        : 'bg-purple-600 ring-1 ring-purple-300'
+                    }`}
+                  >
+                    {currentUser.avatarInitials}
+                  </div>
+                  <div className="hidden sm:flex flex-col text-left leading-none">
+                    <div className="flex items-center gap-1">
+                      <span className="text-[11px] font-black text-white truncate max-w-[130px]">
+                        Pihak {currentUser.role}
+                      </span>
+                      <span
+                        className={`px-1.5 py-0.2 rounded text-[8.5px] font-black uppercase tracking-wider ${
+                          currentUser.role === 'PMO'
+                            ? 'bg-blue-500/80 text-white'
+                            : currentUser.role === 'PLANNING'
+                            ? 'bg-emerald-500/80 text-white'
+                            : 'bg-purple-500/80 text-white'
+                        }`}
+                      >
+                        AKTIF
+                      </span>
+                    </div>
+                    <span className="text-[9px] text-sky-200 truncate max-w-[130px] mt-0.5">
+                      Ganti Pihak &rarr;
+                    </span>
+                  </div>
+                </button>
+
+                {onLogout && (
+                  <button
+                    type="button"
+                    onClick={onLogout}
+                    title="Keluar dari sesi akun"
+                    className="p-1.5 rounded-xl text-white/80 hover:text-rose-300 hover:bg-rose-500/20 border border-white/10 transition-colors cursor-pointer"
+                  >
+                    <LogOut className="w-4 h-4" />
+                  </button>
+                )}
+              </div>
+            ) : (
+              <button
+                type="button"
+                onClick={onOpenLogin}
+                className="px-3 py-1.5 rounded-xl bg-amber-400 hover:bg-amber-300 text-slate-950 font-black text-xs shadow-md transition-all cursor-pointer flex items-center gap-1.5"
+              >
+                <User className="w-3.5 h-3.5" />
+                <span>Login Pemeriksa</span>
+              </button>
+            )}
+
             {result && onDownloadPdf && (
               <button
                 type="button"
@@ -135,7 +242,7 @@ export const Header: React.FC<HeaderProps> = ({
             )}
 
             {/* Real-time Date and Clock */}
-            <div className="text-white">
+            <div className="text-white hidden lg:block">
               <RealTimeClock className="inline-flex text-white font-semibold" />
             </div>
 
