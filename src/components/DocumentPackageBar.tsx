@@ -22,6 +22,7 @@ import {
 } from 'lucide-react';
 import { DocumentPackage } from '../types';
 import { downloadVerificationExcel } from '../services/excelGenerator';
+import { downloadVerificationPdf } from '../services/pdfGenerator';
 
 interface DocumentPackageBarProps {
   packages: DocumentPackage[];
@@ -375,6 +376,18 @@ export const DocumentPackageBar: React.FC<DocumentPackageBarProps> = ({
                     title="Download Excel 9 Sheets untuk paket ini"
                   >
                     <Download className="w-3.5 h-3.5" />
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      downloadVerificationPdf(pkg.result);
+                    }}
+                    className="p-1.5 rounded-lg text-slate-500 hover:text-rose-700 hover:bg-rose-50 border border-transparent hover:border-rose-200 transition-colors"
+                    title="Unduh Laporan Ringkasan PDF untuk paket ini"
+                  >
+                    <FileText className="w-3.5 h-3.5" />
                   </button>
 
                   <button

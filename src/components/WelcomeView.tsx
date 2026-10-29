@@ -44,16 +44,16 @@ export const WelcomeView: React.FC<WelcomeViewProps> = ({
       {/* Top Header Bar on Welcome Gate */}
       <header className="relative z-10 w-full px-4 sm:px-8 py-2.5 sm:py-3 flex items-center justify-between border-b border-white/10 backdrop-blur-sm shrink-0">
         <div className="flex items-center space-x-2.5 sm:space-x-3">
-          <div className="p-1.5 rounded-xl bg-gradient-to-br from-sky-400/20 to-amber-400/20 border border-amber-300/30 backdrop-blur-md shadow-xs">
-            <Droplet className="w-4 h-4 sm:w-5 sm:h-5 text-cyan-400 fill-cyan-400" />
+          <div className="p-1 rounded-xl bg-gradient-to-br from-sky-400/20 to-amber-400/20 border border-amber-300/30 backdrop-blur-md shadow-xs flex items-center justify-center">
+            <DashboardLogo size="sm" showText={false} animated={false} />
           </div>
           <div>
             <span className="text-xs sm:text-sm font-black tracking-widest text-white uppercase font-sans flex items-center gap-1.5">
-              <span>PT AIR BERSIH JAKARTA</span>
+              <span>PRIMA &bull; PT AIR BERSIH JAKARTA</span>
               <span className="hidden md:inline-block w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />
             </span>
-            <span className="block text-[10px] text-cyan-200/80 font-semibold uppercase tracking-wider">
-              Departemen PMO Cyclical
+            <span className="block text-[10px] text-cyan-200/80 font-semibold tracking-wider">
+              Project Records, Intelligence, Monitoring and Assurance
             </span>
           </div>
         </div>
@@ -74,18 +74,25 @@ export const WelcomeView: React.FC<WelcomeViewProps> = ({
         </div>
 
         {/* Corporate System Tag Badge with Blue & Yellow Gradient */}
-        <div className="inline-flex items-center gap-1.5 sm:gap-2 px-3.5 py-1 rounded-full bg-gradient-to-r from-sky-500/20 via-amber-400/20 to-blue-500/20 border border-amber-400/40 text-amber-200 text-[10px] sm:text-xs font-semibold tracking-wide uppercase mb-2 sm:mb-3 backdrop-blur-md shadow-[0_0_15px_rgba(251,191,36,0.15)]">
+        <div className="inline-flex items-center gap-1.5 sm:gap-2 px-3.5 py-1 rounded-full bg-gradient-to-r from-sky-500/20 via-amber-400/20 to-blue-500/20 border border-amber-400/40 text-amber-200 text-[10px] sm:text-xs font-semibold tracking-wide uppercase mb-2 sm:mb-2.5 backdrop-blur-md shadow-[0_0_15px_rgba(251,191,36,0.15)]">
           <Sparkles className="w-3.5 h-3.5 text-amber-400 shrink-0" />
           <span>Sistem Penjaminan Mutu &amp; Kepatuhan Audit Proyek Cyclical</span>
         </div>
 
-        {/* Primary Welcome Title with Cheerful Gradient */}
-        <h1 className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-black text-white tracking-tight leading-snug mb-1.5 sm:mb-2 font-sans">
-          Dashboard Verifikasi Berita Acara &amp;{' '}
-          <span className="text-transparent bg-clip-text bg-gradient-to-r from-cyan-300 via-yellow-200 to-amber-300">
-            Rekonsiliasi Finansial
-          </span>
-        </h1>
+        {/* Primary Welcome Title with PRIMA and its Full Expansion */}
+        <div className="mb-2 sm:mb-3">
+          <h1 className="text-3xl sm:text-4xl md:text-5xl font-black text-white tracking-tight leading-none font-sans">
+            <span className="text-transparent bg-clip-text bg-gradient-to-r from-white via-sky-100 to-amber-300 drop-shadow-md">
+              PRIMA
+            </span>
+          </h1>
+          <div className="mt-1.5 text-sm sm:text-base md:text-lg font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-cyan-300 via-yellow-200 to-amber-300 tracking-wide">
+            Project Records, Intelligence, Monitoring and Assurance
+          </div>
+          <div className="text-[11px] sm:text-xs font-semibold text-slate-300/90 mt-1 uppercase tracking-wider">
+            Dashboard Verifikasi Berita Acara &amp; Rekonsiliasi Finansial Terpadu
+          </div>
+        </div>
 
         {/* Introductory Overview Statement */}
         <p className="text-xs sm:text-sm text-slate-300 max-w-2xl font-normal leading-relaxed mb-2.5 sm:mb-4 text-balance line-clamp-2 sm:line-clamp-none">

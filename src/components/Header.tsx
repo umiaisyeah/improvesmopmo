@@ -7,9 +7,10 @@ import {
   Moon,
   ShieldCheck,
   CheckCircle2,
+  FileText,
 } from 'lucide-react';
 import { VerificationResult } from '../types';
-import { CompanyLogo } from './CompanyLogo';
+import { DashboardLogo } from './DashboardLogo';
 import { RealTimeClock } from './RealTimeClock';
 
 interface HeaderProps {
@@ -17,6 +18,7 @@ interface HeaderProps {
   onOpenConfig?: () => void;
   onOpenReview?: () => void;
   onOpenReset?: () => void;
+  onDownloadPdf?: () => void;
   isProcessing?: boolean;
   onToggleSidebar?: () => void;
   activeTabName?: string;
@@ -31,6 +33,7 @@ export const Header: React.FC<HeaderProps> = ({
   onOpenConfig,
   onOpenReview,
   onOpenReset,
+  onDownloadPdf,
   isProcessing = false,
   onToggleSidebar,
   activeTabName,
@@ -68,13 +71,28 @@ export const Header: React.FC<HeaderProps> = ({
               </button>
             )}
 
-            {/* Logo: Click to return to Welcome Page */}
+            {/* Logo PRIMA: Click to return to Welcome Page */}
             <div
               onClick={onNavigateWelcome}
-              className="flex items-center shrink-0 cursor-pointer hover:opacity-90 transition-opacity bg-white/95 p-1 rounded-lg"
-              title="Kembali ke Laman Selamat Datang"
+              className="flex items-center gap-2 shrink-0 cursor-pointer hover:opacity-95 transition-all group"
+              title="PRIMA (Project Records, Intelligence, Monitoring and Assurance) - Kembali ke Laman Pengantar"
             >
-              <CompanyLogo className="h-6 sm:h-7 w-auto" />
+              <div className="w-8 h-8 sm:w-9 sm:h-9 relative flex items-center justify-center shrink-0">
+                <DashboardLogo size="sm" showText={false} animated={true} />
+              </div>
+              <div className="flex flex-col justify-center min-w-0">
+                <div className="flex items-center gap-1.5 leading-none">
+                  <span className="font-black text-sm sm:text-base tracking-wider text-white group-hover:text-amber-300 transition-colors font-sans">
+                    PRIMA
+                  </span>
+                  <span className="px-1.5 py-0.2 rounded text-[8.5px] font-black uppercase tracking-wider bg-amber-400 text-slate-950 shadow-2xs">
+                    PMO
+                  </span>
+                </div>
+                <span className="hidden xl:inline-block text-[9px] text-sky-100/90 font-medium tracking-tight whitespace-nowrap mt-0.5">
+                  Project Records, Intelligence, Monitoring and Assurance
+                </span>
+              </div>
             </div>
 
             {/* Context Breadcrumbs */}
@@ -102,8 +120,20 @@ export const Header: React.FC<HeaderProps> = ({
             </div>
           </div>
 
-          {/* Right: Realtime Clock and Dark/Light Mode Toggle */}
+          {/* Right: PDF export, Realtime Clock and Dark/Light Mode Toggle */}
           <div className="flex items-center space-x-2 shrink-0 ml-auto">
+            {result && onDownloadPdf && (
+              <button
+                type="button"
+                onClick={onDownloadPdf}
+                title="Unduh Laporan Ringkasan Hasil Verifikasi Audit (PDF)"
+                className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold bg-white/20 hover:bg-white/30 text-white border border-white/30 transition-all cursor-pointer shadow-xs hover:scale-105"
+              >
+                <FileText className="w-3.5 h-3.5 text-amber-300" />
+                <span>Unduh Laporan PDF</span>
+              </button>
+            )}
+
             {/* Real-time Date and Clock */}
             <div className="text-white">
               <RealTimeClock className="inline-flex text-white font-semibold" />

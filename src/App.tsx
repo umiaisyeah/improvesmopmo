@@ -27,6 +27,7 @@ import { GOLDEN_TEST_CASE_RESULT } from './data/goldenTestCase';
 import { DEFAULT_PAKET_2 } from './data/paket2Data';
 import { runVerificationPipeline } from './services/verificationPipeline';
 import { downloadVerificationExcel } from './services/excelGenerator';
+import { downloadVerificationPdf } from './services/pdfGenerator';
 import {
   loadAllStoredPackages,
   persistAllPackages,
@@ -475,6 +476,7 @@ export default function App() {
           onOpenConfig={() => setShowConfig(true)}
           onOpenReview={() => setShowReview(true)}
           onOpenReset={() => setShowReset(true)}
+          onDownloadPdf={() => result && downloadVerificationPdf(result)}
           isProcessing={isProcessing}
           onToggleSidebar={() => {
             if (window.innerWidth < 768) {
@@ -785,6 +787,7 @@ export default function App() {
                         }}
                         onOpenUpload={() => setShowUpload(true)}
                         onDownloadExcel={() => result && downloadVerificationExcel(result)}
+                        onDownloadPdf={() => result && downloadVerificationPdf(result)}
                         onDeletePackage={handleDeletePackage}
                       />
                     )}
@@ -812,7 +815,15 @@ export default function App() {
                     )}
 
                     {activeTab === 'traceability' && (
-                      <TraceabilityView records={result.traceability} />
+                      <TraceabilityView
+                        records={result.traceability}
+                        project={result.project}
+                        changes={result.changes}
+                        financialItems={result.financial_items}
+                        evidences={result.evidences}
+                        totalRab={result.total_rab}
+                        onDownloadPdf={() => result && downloadVerificationPdf(result)}
+                      />
                     )}
 
                     {activeTab === 'evidence' && (

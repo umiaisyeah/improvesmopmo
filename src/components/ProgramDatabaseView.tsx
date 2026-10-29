@@ -22,6 +22,7 @@ interface ProgramDatabaseViewProps {
   onSelectPackage: (id: string) => void;
   onOpenUpload: () => void;
   onDownloadExcel: () => void;
+  onDownloadPdf?: () => void;
   onDeletePackage: (id: string) => void;
 }
 
@@ -31,6 +32,7 @@ export const ProgramDatabaseView: React.FC<ProgramDatabaseViewProps> = ({
   onSelectPackage,
   onOpenUpload,
   onDownloadExcel,
+  onDownloadPdf,
   onDeletePackage,
 }) => {
   const [searchQuery, setSearchQuery] = useState('');
@@ -73,11 +75,21 @@ export const ProgramDatabaseView: React.FC<ProgramDatabaseViewProps> = ({
             <button
               type="button"
               onClick={onDownloadExcel}
-              className="px-5 py-3 rounded-2xl bg-emerald-500 hover:bg-emerald-600 text-white font-extrabold text-xs shadow-lg flex items-center gap-2 transition-all cursor-pointer hover:scale-105 ring-2 ring-white/30"
+              className="px-4 py-2.5 rounded-2xl bg-emerald-500 hover:bg-emerald-600 text-white font-extrabold text-xs shadow-lg flex items-center gap-2 transition-all cursor-pointer hover:scale-105 ring-2 ring-white/30"
             >
               <FileSpreadsheet className="w-4 h-4" />
               <span>Unduh Kertas Kerja</span>
             </button>
+            {onDownloadPdf && (
+              <button
+                type="button"
+                onClick={onDownloadPdf}
+                className="px-4 py-2.5 rounded-2xl bg-rose-600 hover:bg-rose-700 text-white font-extrabold text-xs shadow-lg flex items-center gap-2 transition-all cursor-pointer hover:scale-105 ring-2 ring-white/30"
+              >
+                <FileText className="w-4 h-4" />
+                <span>Unduh Laporan PDF</span>
+              </button>
+            )}
             <button
               type="button"
               onClick={onOpenUpload}

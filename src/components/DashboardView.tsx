@@ -25,6 +25,7 @@ import {
 import { VerificationResult } from '../types';
 import { formatRupiah, formatPercentage, formatQuantity } from '../services/normalizer';
 import { downloadVerificationExcel } from '../services/excelGenerator';
+import { downloadVerificationPdf } from '../services/pdfGenerator';
 
 interface DashboardViewProps {
   result: VerificationResult;
@@ -84,7 +85,17 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
               className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-extrabold text-white bg-gradient-to-r from-emerald-600 via-teal-600 to-amber-500 hover:from-emerald-700 hover:to-amber-600 shadow-xs ring-2 ring-amber-400/30 transition-all cursor-pointer"
             >
               <Download className="w-4 h-4 text-white" />
-              <span>Export Excel (9 Sheets)</span>
+              <span>Export Excel</span>
+            </button>
+            <button
+              id="btn-export-pdf-dashboard"
+              type="button"
+              onClick={() => downloadVerificationPdf(result)}
+              title="Unduh Laporan Ringkasan Hasil Verifikasi Audit (Format PDF Siap Dibagikan)"
+              className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-extrabold text-white bg-gradient-to-r from-rose-600 via-red-600 to-amber-500 hover:from-rose-700 hover:to-amber-600 shadow-xs ring-2 ring-rose-400/30 transition-all cursor-pointer"
+            >
+              <FileText className="w-4 h-4 text-white" />
+              <span>Export Ringkasan PDF</span>
             </button>
             {onDeleteCurrentPackage && (
               <button
