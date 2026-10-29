@@ -23,7 +23,6 @@ import {
   ShieldCheck,
   Building2,
   Plus,
-  Home,
 } from 'lucide-react';
 import { DocumentPackage, VerificationResult } from '../types';
 import { DashboardLogo } from './DashboardLogo';
@@ -52,14 +51,6 @@ interface NavItem {
 }
 
 const NAV_ITEMS: NavItem[] = [
-  {
-    id: 'welcome',
-    label: 'Laman Selamat Datang',
-    shortLabel: 'Pengantar',
-    icon: Home,
-    group: 'main',
-    getBadge: () => ({ text: 'Portal', variant: 'info' }),
-  },
   {
     id: 'dashboard',
     label: 'Dashboard Executive',

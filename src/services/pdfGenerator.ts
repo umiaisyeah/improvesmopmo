@@ -2,11 +2,12 @@ import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { VerificationResult, TraceabilityRecord, TechnicalChange, FinancialItem } from '../types';
 import { formatRupiah, formatPercentage } from './normalizer';
+import { getStoredUser } from './authService';
 
 /**
  * Generates an executive-ready Audit Verification Summary Report in PDF format.
  * Includes official PRIMA branding, project identity, executive KPIs, financial reconciliation,
- * chronological traceability matrix (MC-0 -> BAPL -> MC-100), critical exceptions, and tripartite sign-offs.
+ * chronological traceability matrix (MC-0 -> BAPL -> MC-100), critical exceptions, and logged-in user sign-off.
  */
 export function generateVerificationPdf(result: VerificationResult): jsPDF {
   const doc = new jsPDF({
@@ -28,11 +29,32 @@ export function generateVerificationPdf(result: VerificationResult): jsPDF {
   const review = result.human_review;
 
   const reportId = `PRIMA-AUDIT-${projectCode}-${Date.now().toString().slice(-6)}`;
-  const dateStr = new Date(result.generated_at || Date.now()).toLocaleDateString('id-ID', {
+  const generatedTimestamp = result.generated_at || Date.now();
+  const dateStr = new Date(generatedTimestamp).toLocaleDateString('id-ID', {
     day: 'numeric',
     month: 'long',
     year: 'numeric',
   });
+  const checkingTimeStr = new Date(generatedTimestamp).toLocaleTimeString('id-ID', {
+    hour: '2-digit',
+    minute: '2-digit',
+  });
+
+  const now = new Date();
+  const printDateStr = now.toLocaleDateString('id-ID', {
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+  });
+  const printTimeStr = now.toLocaleTimeString('id-ID', {
+    hour: '2-digit',
+    minute: '2-digit',
+  });
+
+  const currentUser = getStoredUser();
+  const partyName = currentUser ? currentUser.name : 'Pihak PMO';
+  const roleLabel = currentUser ? currentUser.roleLabel : 'Project Management Office';
+  const institution = currentUser ? currentUser.institution : 'PT Air Bersih Jakarta';
 
   // Helper function to draw header on pages
   const drawPageHeader = (pageNumber: number, totalPagesPlaceholder: boolean = false) => {
@@ -52,7 +74,7 @@ export function generateVerificationPdf(result: VerificationResult): jsPDF {
 
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(7.5);
-    doc.text('Sistem Verifikasi Dokumen Proyek PMO Cyclical &bull; Standar SPI & BPK RI', marginX, 15);
+    doc.text('Sistem Verifikasi Dokumen Proyek PMO Cyclical', marginX, 15);
 
     // Right-side ref code
     doc.setFont('courier', 'bold');
@@ -87,40 +109,40 @@ export function generateVerificationPdf(result: VerificationResult): jsPDF {
   // =========================================================================
   drawPageHeader(1);
 
-  // Document Title Section
-  let currentY = 28;
+  // Document Title Section - positioned with safe vertical separation from status badge
+  let currentY = 27;
   doc.setTextColor(15, 23, 42); // slate-900
   doc.setFont('helvetica', 'bold');
-  doc.setFontSize(14);
-  doc.text('LAPORAN RINGKASAN EKSEKUTIF AUDIT & VERIFIKASI BAPL', marginX, currentY);
+  doc.setFontSize(13);
+  doc.text('LAPORAN RINGKASAN EKSEKUTIF AUDIT & VERIFIKASI BAPL', marginX, currentY, { maxWidth: pageWidth - marginX * 2 - 58 });
 
-  currentY += 5;
+  currentY += 6;
   doc.setFont('helvetica', 'normal');
-  doc.setFontSize(8.5);
+  doc.setFontSize(8);
   doc.setTextColor(71, 85, 105); // slate-600
   doc.text(
     'Rangkuman evaluasi komparasi teknis, finansial, dan audit penelusuran dokumen lapangan.',
     marginX,
-    currentY
+    currentY,
+    { maxWidth: pageWidth - marginX * 2 - 58 }
   );
 
-  // Status Badge on the right
+  // Status Badge on the right - cleanly placed at y=24, completely separated from title text
   const isMatch = totalRab.delta_match;
   doc.setFillColor(isMatch ? 220 : 254, isMatch ? 252 : 242, isMatch ? 231 : 242);
   doc.setDrawColor(isMatch ? 34 : 225, isMatch ? 197 : 29, isMatch ? 94 : 72);
-  doc.roundedRect(pageWidth - marginX - 55, currentY - 7, 55, 9, 1.5, 1.5, 'FD');
+  doc.roundedRect(pageWidth - marginX - 54, 24, 54, 9, 1.5, 1.5, 'FD');
   doc.setTextColor(isMatch ? 22 : 153, isMatch ? 101 : 27, isMatch ? 52 : 27);
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(7.5);
   doc.text(
-    isMatch ? 'STATUS: SINKRON & VALID' : 'STATUS: PERLU REVIEW / ANOMALI',
-    pageWidth - marginX - 27.5,
-    currentY - 1.5,
+    isMatch ? 'STATUS: SINKRON & VALID' : 'STATUS: PERLU REVIEW',
+    pageWidth - marginX - 27,
+    29.5,
     { align: 'center' }
   );
 
-  // SECTION 1: Identitas Proyek & Kontrak
-  currentY += 7;
+  currentY += 6;
   doc.setFillColor(241, 245, 249);
   doc.rect(marginX, currentY, pageWidth - marginX * 2, 6, 'F');
   doc.setTextColor(15, 23, 42);
@@ -413,95 +435,34 @@ export function generateVerificationPdf(result: VerificationResult): jsPDF {
     currentY += 20;
   }
 
-  // LEMBAR PENGESAHAN & TANDA TANGAN TRIPARTIT
+  // 6. TERTANDA PIHAK YANG LOGIN AKUN PRIMA & WAKTU CHECKING / CETAK
   doc.setFillColor(241, 245, 249);
   doc.rect(marginX, currentY, pageWidth - marginX * 2, 6, 'F');
   doc.setTextColor(15, 23, 42);
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(8.5);
-  doc.text('6. LEMBAR PENGESAHAN & PERSETUJUAN AUDIT (SIGN-OFF)', marginX + 3, currentY + 4.2);
+  doc.text('6. TERTANDA PIHAK LOGIN AKUN PRIMA & WAKTU VERIFIKASI', marginX + 3, currentY + 4.2);
 
   currentY += 8;
+  doc.setDrawColor(203, 213, 225);
+  doc.setFillColor(255, 255, 255);
+  doc.roundedRect(marginX, currentY, pageWidth - marginX * 2, 30, 2, 2, 'FD');
 
-  // 4 Signature columns
-  const sigBoxWidth = (pageWidth - marginX * 2 - 9) / 4;
-  const sigBoxHeight = 36;
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(8);
+  doc.setTextColor(15, 23, 42);
+  doc.text(`Tertanda Akun Yang Login: ${partyName} (${roleLabel})`, marginX + 5, currentY + 6);
 
-  const signatures = [
-    {
-      title: 'Disusun Oleh:',
-      role: 'Project Manager',
-      inst: project.contractor || 'Kontraktor Pelaksana',
-      name: 'Ir. Hendra Saputra',
-      status: 'TERVERIFIKASI',
-    },
-    {
-      title: 'Diperiksa Lapangan:',
-      role: 'Supervising Engineer',
-      inst: 'Konsultan Pengawas / PMO',
-      name: 'Bambang Wijanarko, ST',
-      status: 'PARAF SAH',
-    },
-    {
-      title: 'Divalidasi Finansial:',
-      role: 'Lead Commercial & Justek',
-      inst: 'Tim Verifikasi PMO',
-      name: review?.reviewed_by || 'Auditor Teknis PMO',
-      status: review?.pmo_review_status || 'VERIFIED_ACCEPT',
-    },
-    {
-      title: 'Disetujui Oleh:',
-      role: 'Kepala Departemen PMO',
-      inst: 'PT Air Bersih Jakarta',
-      name: 'Direksi / Kadep PMO',
-      status: 'PENGESAHAN RESMI',
-    },
-  ];
-
-  signatures.forEach((sig, sIdx) => {
-    const boxX = marginX + sIdx * (sigBoxWidth + 3);
-    doc.setDrawColor(203, 213, 225);
-    doc.setFillColor(255, 255, 255);
-    doc.roundedRect(boxX, currentY, sigBoxWidth, sigBoxHeight, 2, 2, 'FD');
-
-    // Header label
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(7);
-    doc.setTextColor(71, 85, 105);
-    doc.text(sig.title, boxX + 3, currentY + 4.5);
-
-    doc.setFont('helvetica', 'normal');
-    doc.setFontSize(6.5);
-    doc.setTextColor(100, 116, 139);
-    doc.text(sig.role, boxX + 3, currentY + 8);
-    doc.text(sig.inst.slice(0, 22), boxX + 3, currentY + 11.5);
-
-    // Stamp / Seal Area
-    doc.setDrawColor(226, 232, 240);
-    doc.setLineDashPattern([1, 1], 0);
-    doc.line(boxX + 4, currentY + 23, boxX + sigBoxWidth - 4, currentY + 23);
-    doc.setLineDashPattern([], 0);
-
-    // Status stamp text
-    doc.setFont('courier', 'bold');
-    doc.setFontSize(6.5);
-    doc.setTextColor(0, 84, 166);
-    doc.text(`[${sig.status}]`, boxX + sigBoxWidth / 2, currentY + 20, { align: 'center' });
-
-    // Name at bottom
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(7.5);
-    doc.setTextColor(15, 23, 42);
-    doc.text(sig.name, boxX + sigBoxWidth / 2, currentY + 29, { align: 'center' });
-
-    doc.setFont('helvetica', 'normal');
-    doc.setFontSize(6);
-    doc.setTextColor(100, 116, 139);
-    doc.text(dateStr, boxX + sigBoxWidth / 2, currentY + 33, { align: 'center' });
-  });
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(7.5);
+  doc.setTextColor(71, 85, 105);
+  doc.text(`Institusi / Departemen: ${institution}`, marginX + 5, currentY + 12);
+  doc.text(`Waktu & Tanggal Checking (Pemeriksaan): ${checkingTimeStr} WIB, ${dateStr}`, marginX + 5, currentY + 17);
+  doc.text(`Waktu & Tanggal Cetak Laporan PDF: ${printTimeStr} WIB, ${printDateStr}`, marginX + 5, currentY + 22);
+  doc.text(`Status Keabsahan Dokumen: SINKRON & TERVERIFIKASI SISTEM PRIMA`, marginX + 5, currentY + 26.5);
 
   // Digital verification watermark / footer note
-  currentY += sigBoxHeight + 5;
+  currentY += 36;
   doc.setFont('courier', 'normal');
   doc.setFontSize(6.5);
   doc.setTextColor(148, 163, 184);

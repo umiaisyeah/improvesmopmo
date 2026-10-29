@@ -26,10 +26,15 @@ import {
   ChevronDown,
   X,
   RotateCcw,
+  GitCompare,
+  Scale,
+  CheckSquare,
+  Square,
 } from 'lucide-react';
 import { DocumentPackage, IPALocation } from '../types';
 import { autoCategorizeIpa, ALL_IPA_LOCATIONS, IPALocationMeta } from '../utils/ipaCategorizer';
 import { calculateDeadlineInfo, DeadlineUrgency } from '../utils/deadlineChecker';
+import { downloadPeriodicRecapitulationExcel } from '../services/excelGenerator';
 
 interface ProgramDatabaseViewProps {
   packages: DocumentPackage[];
@@ -53,7 +58,13 @@ export const ProgramDatabaseView: React.FC<ProgramDatabaseViewProps> = ({
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedIpa, setSelectedIpa] = useState<IPALocation | 'ALL'>('ALL');
   const [deadlineFilter, setDeadlineFilter] = useState<'ALL' | 'CRITICAL' | 'OVERDUE' | 'SAFE'>('ALL');
-  const [showIpaDirectory, setShowIpaDirectory] = useState<boolean>(true);
+  
+  // Comparison State
+  const [selectedForComparison, setSelectedForComparison] = useState<string[]>([]);
+  const [showComparisonModal, setShowComparisonModal] = useState<boolean>(false);
+
+  // Periodic Recapitulation Excel Export Selection State
+  const [selectedForPeriodicExport, setSelectedForPeriodicExport] = useState<string[]>([]);
 
   // Compute deadline info for all packages
   const packageDeadlineMap = new Map<string, ReturnType<typeof calculateDeadlineInfo>>();
@@ -91,8 +102,32 @@ export const ProgramDatabaseView: React.FC<ProgramDatabaseViewProps> = ({
   const matchCount = packages.filter((p) => p.result?.total_rab?.delta_match).length;
   const mismatchCount = totalPrograms - matchCount;
 
+  const handleToggleCompare = (id: string) => {
+    if (selectedForComparison.includes(id)) {
+      setSelectedForComparison(selectedForComparison.filter((item) => item !== id));
+    } else {
+      if (selectedForComparison.length >= 2) {
+        // Replace the oldest selection or prompt
+        setSelectedForComparison([selectedForComparison[1], id]);
+      } else {
+        setSelectedForComparison([...selectedForComparison, id]);
+      }
+    }
+  };
+
+  const handleTogglePeriodicExport = (id: string) => {
+    if (selectedForPeriodicExport.includes(id)) {
+      setSelectedForPeriodicExport(selectedForPeriodicExport.filter((item) => item !== id));
+    } else {
+      setSelectedForPeriodicExport([...selectedForPeriodicExport, id]);
+    }
+  };
+
+  const pkgA = packages.find((p) => p.id === selectedForComparison[0]);
+  const pkgB = packages.find((p) => p.id === selectedForComparison[1]);
+
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 pb-20">
       {/* Hero Banner for Program Database */}
       <div className="bg-gradient-to-r from-[#002b5b] via-[#0054a6] to-[#f59e0b] rounded-3xl p-6 sm:p-8 text-white shadow-xl relative overflow-hidden">
         <div className="absolute right-0 top-0 bottom-0 w-1/3 bg-white/5 backdrop-blur-xs transform skew-x-12 pointer-events-none" />
@@ -119,6 +154,15 @@ export const ProgramDatabaseView: React.FC<ProgramDatabaseViewProps> = ({
             >
               <FileSpreadsheet className="w-4 h-4" />
               <span>Unduh Kertas Kerja Excel</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => downloadPeriodicRecapitulationExcel(packages, selectedForPeriodicExport)}
+              className="px-4 py-2.5 rounded-2xl bg-teal-600 hover:bg-teal-700 text-white font-extrabold text-xs shadow-lg flex items-center gap-2 transition-all cursor-pointer hover:scale-105 ring-2 ring-white/30"
+              title="Unduh laporan rekapitulasi periodik Excel untuk program terpilih"
+            >
+              <FileSpreadsheet className="w-4 h-4 text-emerald-200" />
+              <span>Rekapitulasi Excel ({selectedForPeriodicExport.length > 0 ? `${selectedForPeriodicExport.length} Dipilih` : 'Semua'})</span>
             </button>
             {onDownloadPdf && (
               <button
@@ -469,22 +513,17 @@ export const ProgramDatabaseView: React.FC<ProgramDatabaseViewProps> = ({
 
                   <div className="space-y-3">
                     {/* Header: Name, Code & Live Status */}
-                    <div className="flex items-start justify-between gap-2 pt-1">
+                    <div className="flex items-center justify-between gap-2 pt-1">
                       <div className="flex items-center gap-2.5">
                         <div className="w-9 h-9 rounded-xl bg-sky-50 dark:bg-sky-950 border border-sky-200 dark:border-sky-800 text-[#0054a6] dark:text-cyan-400 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
                           <Droplet className="w-5 h-5 text-[#0054a6] dark:text-cyan-400" />
                         </div>
-                        <div>
-                          <div className="flex items-center gap-1.5">
-                            <h4 className="text-sm font-black text-slate-900 dark:text-white group-hover:text-[#0054a6] dark:group-hover:text-cyan-400 transition-colors">
-                              {ipa.name}
-                            </h4>
-                            <span className="font-mono text-[10px] font-black px-1.5 py-0.2 rounded bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700">
-                              {ipa.code}
-                            </span>
-                          </div>
-                          <span className="text-[11px] text-slate-500 dark:text-slate-400 block line-clamp-1">
-                            {ipa.distributionZone}
+                        <div className="flex items-center gap-1.5">
+                          <h4 className="text-sm font-black text-slate-900 dark:text-white group-hover:text-[#0054a6] dark:group-hover:text-cyan-400 transition-colors">
+                            {ipa.name}
+                          </h4>
+                          <span className="font-mono text-[10px] font-black px-1.5 py-0.2 rounded bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700">
+                            {ipa.code}
                           </span>
                         </div>
                       </div>
@@ -498,44 +537,6 @@ export const ProgramDatabaseView: React.FC<ProgramDatabaseViewProps> = ({
                       >
                         {ipaPackageCount > 0 ? `${ipaPackageCount} Program Aktif` : 'Siap Unggah'}
                       </span>
-                    </div>
-
-                    {/* Facility Description */}
-                    <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed line-clamp-2">
-                      {ipa.description}
-                    </p>
-
-                    {/* Operational Attributes Grid */}
-                    <div className="bg-slate-50 dark:bg-slate-800/60 rounded-xl p-3 border border-slate-100 dark:border-slate-800 space-y-1.5 text-[11px]">
-                      <div className="flex items-center justify-between">
-                        <span className="text-slate-400 flex items-center gap-1">
-                          <Gauge className="w-3 h-3 text-sky-500" />
-                          <span>Kapasitas Desain:</span>
-                        </span>
-                        <span className="font-extrabold text-slate-800 dark:text-slate-200 font-mono">
-                          {ipa.capacity}
-                        </span>
-                      </div>
-
-                      <div className="flex items-center justify-between">
-                        <span className="text-slate-400 flex items-center gap-1">
-                          <Waves className="w-3 h-3 text-blue-500" />
-                          <span>Sumber Air Baku:</span>
-                        </span>
-                        <span className="font-medium text-slate-700 dark:text-slate-300 truncate max-w-[170px]" title={ipa.waterSource}>
-                          {ipa.waterSource}
-                        </span>
-                      </div>
-
-                      <div className="flex items-center justify-between pt-1 border-t border-slate-200/50 dark:border-slate-700/50">
-                        <span className="text-slate-400 flex items-center gap-1">
-                          <ShieldCheck className="w-3 h-3 text-emerald-500" />
-                          <span>Fasilitas Sistem:</span>
-                        </span>
-                        <span className="font-medium text-slate-700 dark:text-slate-300 truncate max-w-[170px]" title={ipa.facilityType}>
-                          {ipa.facilityType}
-                        </span>
-                      </div>
                     </div>
                   </div>
 
@@ -557,7 +558,7 @@ export const ProgramDatabaseView: React.FC<ProgramDatabaseViewProps> = ({
         </div>
       )}
 
-      {/* Program Grid for Uploaded Packages */}
+      {/* Program Grid for Uploaded Packages with Comparison Checkboxes */}
       {packages.length > 0 && (
         <div className="space-y-3">
           <div className="flex items-center justify-between px-1">
@@ -566,13 +567,14 @@ export const ProgramDatabaseView: React.FC<ProgramDatabaseViewProps> = ({
               <span>Daftar Dokumen Program Terdaftar ({filteredPackages.length} dari {totalPrograms})</span>
             </h3>
             <span className="text-xs text-slate-500">
-              Menampilkan berkas verifikasi aktif
+              Centang 2 program untuk membandingkan nilai RAB &amp; status verifikasi
             </span>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
             {filteredPackages.map((pkg) => {
               const isSelected = pkg.id === activePackageId;
+              const isCheckedForCompare = selectedForComparison.includes(pkg.id);
               const hasMatch = pkg.result?.total_rab?.delta_match ?? true;
               const pkgIpa = pkg.ipa || autoCategorizeIpa(pkg.projectName, pkg.result?.project?.location);
               const dInfo = packageDeadlineMap.get(pkg.id) || calculateDeadlineInfo(pkg.result?.project, pkg.createdAt);
@@ -581,23 +583,59 @@ export const ProgramDatabaseView: React.FC<ProgramDatabaseViewProps> = ({
                 <div
                   key={pkg.id}
                   className={`bg-white dark:bg-slate-900 rounded-2xl border transition-all p-5 shadow-xs flex flex-col justify-between relative group ${
-                    isSelected
+                    isCheckedForCompare
+                      ? 'border-amber-500 ring-2 ring-amber-400/30 bg-amber-50/10'
+                      : isSelected
                       ? 'border-[#0054a6] ring-2 ring-[#0054a6]/20 bg-sky-50/20'
                       : 'border-slate-200 dark:border-slate-800 hover:border-slate-300'
                   }`}
                 >
                   <div className="space-y-3">
-                    {/* Badges Bar: IPA, Verification, & Deadline Flag */}
+                    {/* Checkbox for Comparison & Badges Bar */}
                     <div className="flex items-center justify-between gap-1 flex-wrap">
-                      <div className="flex items-center gap-1.5 flex-wrap">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        {/* Comparison Checkbox */}
+                        <button
+                          type="button"
+                          onClick={() => handleToggleCompare(pkg.id)}
+                          className={`p-1 rounded-lg border transition-all cursor-pointer flex items-center gap-1 text-[10px] font-bold ${
+                            isCheckedForCompare
+                              ? 'bg-amber-400 text-slate-950 border-amber-500 shadow-2xs'
+                              : 'bg-slate-100 dark:bg-slate-800 text-slate-500 border-slate-200 dark:border-slate-700 hover:bg-slate-200'
+                          }`}
+                          title={isCheckedForCompare ? 'Batalkan pilihan perbandingan' : 'Pilih untuk perbandingan'}
+                        >
+                          {isCheckedForCompare ? (
+                            <CheckSquare className="w-3.5 h-3.5 text-slate-950" />
+                          ) : (
+                            <Square className="w-3.5 h-3.5 text-slate-400" />
+                          )}
+                          <span>{isCheckedForCompare ? 'Dipilih' : 'Bandingkan'}</span>
+                        </button>
+
+                        {/* Periodic Excel Export Checkbox */}
+                        <button
+                          type="button"
+                          onClick={() => handleTogglePeriodicExport(pkg.id)}
+                          className={`p-1 rounded-lg border transition-all cursor-pointer flex items-center gap-1 text-[10px] font-bold ${
+                            selectedForPeriodicExport.includes(pkg.id)
+                              ? 'bg-teal-600 text-white border-teal-700 shadow-2xs'
+                              : 'bg-slate-100 dark:bg-slate-800 text-slate-500 border-slate-200 dark:border-slate-700 hover:bg-slate-200'
+                          }`}
+                          title={selectedForPeriodicExport.includes(pkg.id) ? 'Batalkan pilihan rekap Excel' : 'Pilih untuk rekap Excel periodik'}
+                        >
+                          {selectedForPeriodicExport.includes(pkg.id) ? (
+                            <CheckSquare className="w-3.5 h-3.5 text-white" />
+                          ) : (
+                            <Square className="w-3.5 h-3.5 text-slate-400" />
+                          )}
+                          <span>{selectedForPeriodicExport.includes(pkg.id) ? 'Excel ✓' : 'Rekap Excel'}</span>
+                        </button>
+
                         {/* 6 IPA Auto-Categorization Badge */}
                         <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-[#0054a6] text-white flex items-center gap-1 shadow-2xs">
                           <Droplet className="w-3 h-3 text-amber-300" />
                           <span>{pkgIpa}</span>
-                        </span>
-
-                        <span className="px-2 py-0.5 rounded-md text-[10px] font-bold font-mono bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700">
-                          {pkg.projectCode}
                         </span>
                       </div>
 
@@ -683,6 +721,251 @@ export const ProgramDatabaseView: React.FC<ProgramDatabaseViewProps> = ({
                 </div>
               );
             })}
+          </div>
+        </div>
+      )}
+
+      {/* FLOATING COMPARISON ACTION BAR */}
+      {selectedForComparison.length > 0 && (
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 bg-slate-900/95 text-white backdrop-blur-md px-6 py-3.5 rounded-2xl shadow-2xl border border-slate-700 flex items-center gap-4 animate-in slide-in-from-bottom duration-300">
+          <div className="flex items-center gap-2">
+            <div className="w-8 h-8 rounded-xl bg-amber-400 text-slate-950 flex items-center justify-center font-black text-xs">
+              {selectedForComparison.length}/2
+            </div>
+            <div>
+              <div className="text-xs font-bold text-white">
+                {selectedForComparison.length === 1 ? 'Pilih 1 program lagi untuk perbandingan' : '2 Program Siap Dibandingkan'}
+              </div>
+              <div className="text-[10px] text-slate-400">
+                {selectedForComparison.length === 1 ? 'Centang kotak pada program lain' : 'Perbandingan RAB & Status Verifikasi'}
+              </div>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2 ml-2">
+            <button
+              type="button"
+              disabled={selectedForComparison.length < 2}
+              onClick={() => setShowComparisonModal(true)}
+              className={`px-4 py-2 rounded-xl text-xs font-black flex items-center gap-1.5 transition-all cursor-pointer ${
+                selectedForComparison.length === 2
+                  ? 'bg-gradient-to-r from-amber-400 to-amber-500 text-slate-950 hover:from-amber-300 hover:to-amber-400 shadow-md ring-2 ring-amber-300/50'
+                  : 'bg-slate-800 text-slate-50 cursor-not-allowed'
+              }`}
+            >
+              <GitCompare className="w-4 h-4" />
+              <span>Bandingkan Sekarang</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setSelectedForComparison([])}
+              className="px-3 py-2 rounded-xl text-xs font-semibold text-slate-300 hover:text-white bg-slate-800 hover:bg-slate-700 transition-colors cursor-pointer"
+            >
+              Reset
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* COMPARISON MODAL */}
+      {showComparisonModal && pkgA && pkgB && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md animate-in fade-in duration-200">
+          <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-2xl max-w-5xl w-full overflow-hidden flex flex-col max-h-[92vh]">
+            {/* Modal Header */}
+            <div className="p-6 bg-gradient-to-r from-[#002b5b] via-[#0054a6] to-[#f59e0b] text-white relative shrink-0 flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 rounded-2xl bg-white/10 border border-white/20 flex items-center justify-center shrink-0">
+                  <Scale className="w-6 h-6 text-amber-300" />
+                </div>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-lg font-black tracking-wider uppercase font-sans">
+                      Perbandingan 2 Program &amp; Dokumen Verifikasi
+                    </span>
+                    <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-400 text-slate-950">
+                      PRIMA AUDIT
+                    </span>
+                  </div>
+                  <p className="text-xs text-sky-100 font-medium">
+                    Analisis komparatif nilai RAB, delta deviasi, status verifikasi, dan temuan audit.
+                  </p>
+                </div>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setShowComparisonModal(false)}
+                className="p-2 rounded-full bg-white/10 hover:bg-white/20 text-white transition-colors cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Modal Body: Side-by-Side Comparison Table */}
+            <div className="p-6 overflow-y-auto space-y-6 text-slate-800 dark:text-slate-100">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {/* Program A */}
+                <div className="bg-slate-50 dark:bg-slate-800/50 rounded-2xl border-2 border-sky-300 dark:border-sky-800 p-5 space-y-4 shadow-xs relative">
+                  <div className="absolute -top-3 left-6 px-3 py-0.5 rounded-full bg-[#0054a6] text-white text-[10px] font-black uppercase tracking-wider">
+                    Program 1 (Pilihan A)
+                  </div>
+                  
+                  <div className="pt-2">
+                    <span className="text-[10px] font-mono text-slate-400">{pkgA.projectCode}</span>
+                    <h3 className="text-base font-black text-slate-900 dark:text-white">{pkgA.title}</h3>
+                    <p className="text-xs text-slate-600 dark:text-slate-300 mt-0.5">{pkgA.projectName}</p>
+                  </div>
+
+                  <div className="space-y-2.5 text-xs">
+                    <div className="flex items-center justify-between p-2.5 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
+                      <span className="text-slate-500">Wilayah IPA:</span>
+                      <span className="font-bold text-[#0054a6] dark:text-cyan-400">{pkgA.ipa || 'IPA Jakarta'}</span>
+                    </div>
+
+                    <div className="flex items-center justify-between p-2.5 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
+                      <span className="text-slate-500">Total RAB Awal (Initial):</span>
+                      <span className="font-mono font-bold text-slate-900 dark:text-white">
+                        Rp {pkgA.result.total_rab.rab_initial.toLocaleString('id-ID')}
+                      </span>
+                    </div>
+
+                    <div className="flex items-center justify-between p-2.5 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
+                      <span className="text-slate-500">Total RAB Revisi (Revised):</span>
+                      <span className="font-mono font-black text-emerald-600 dark:text-emerald-400">
+                        Rp {pkgA.result.total_rab.rab_revised.toLocaleString('id-ID')}
+                      </span>
+                    </div>
+
+                    <div className="flex items-center justify-between p-2.5 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
+                      <span className="text-slate-500">Delta Selisih &amp; (%):</span>
+                      <span className="font-mono font-bold text-slate-800 dark:text-slate-200">
+                        Rp {pkgA.result.total_rab.system_calculated_delta.toLocaleString('id-ID')} ({Math.round(pkgA.result.total_rab.system_calculated_percentage * 100)}%)
+                      </span>
+                    </div>
+
+                    <div className="flex items-center justify-between p-2.5 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
+                      <span className="text-slate-500">Status Delta RAB:</span>
+                      <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                        pkgA.result.total_rab.delta_match
+                          ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300'
+                          : 'bg-rose-100 text-rose-800 dark:bg-rose-950 dark:text-rose-300'
+                      }`}>
+                        {pkgA.result.total_rab.delta_match ? '✅ Cocok (Match)' : '⚠️ Terdapat Selisih'}
+                      </span>
+                    </div>
+
+                    <div className="flex items-center justify-between p-2.5 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
+                      <span className="text-slate-500">Jumlah Temuan / Exception:</span>
+                      <span className="font-bold font-mono text-slate-800 dark:text-slate-200">
+                        {pkgA.result.exceptions.length} Temuan ({pkgA.result.exceptions.filter(e => e.priority === 'HIGH').length} HIGH)
+                      </span>
+                    </div>
+
+                    <div className="flex items-center justify-between p-2.5 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
+                      <span className="text-slate-500">Perubahan Teknis (JusTek):</span>
+                      <span className="font-bold font-mono text-slate-800 dark:text-slate-200">
+                        {pkgA.result.changes.length} Item Perubahan
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Program B */}
+                <div className="bg-slate-50 dark:bg-slate-800/50 rounded-2xl border-2 border-amber-300 dark:border-amber-700 p-5 space-y-4 shadow-xs relative">
+                  <div className="absolute -top-3 left-6 px-3 py-0.5 rounded-full bg-amber-500 text-slate-950 text-[10px] font-black uppercase tracking-wider">
+                    Program 2 (Pilihan B)
+                  </div>
+                  
+                  <div className="pt-2">
+                    <span className="text-[10px] font-mono text-slate-400">{pkgB.projectCode}</span>
+                    <h3 className="text-base font-black text-slate-900 dark:text-white">{pkgB.title}</h3>
+                    <p className="text-xs text-slate-600 dark:text-slate-300 mt-0.5">{pkgB.projectName}</p>
+                  </div>
+
+                  <div className="space-y-2.5 text-xs">
+                    <div className="flex items-center justify-between p-2.5 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
+                      <span className="text-slate-500">Wilayah IPA:</span>
+                      <span className="font-bold text-amber-600 dark:text-amber-400">{pkgB.ipa || 'IPA Jakarta'}</span>
+                    </div>
+
+                    <div className="flex items-center justify-between p-2.5 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
+                      <span className="text-slate-500">Total RAB Awal (Initial):</span>
+                      <span className="font-mono font-bold text-slate-900 dark:text-white">
+                        Rp {pkgB.result.total_rab.rab_initial.toLocaleString('id-ID')}
+                      </span>
+                    </div>
+
+                    <div className="flex items-center justify-between p-2.5 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
+                      <span className="text-slate-500">Total RAB Revisi (Revised):</span>
+                      <span className="font-mono font-black text-emerald-600 dark:text-emerald-400">
+                        Rp {pkgB.result.total_rab.rab_revised.toLocaleString('id-ID')}
+                      </span>
+                    </div>
+
+                    <div className="flex items-center justify-between p-2.5 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
+                      <span className="text-slate-500">Delta Selisih &amp; (%):</span>
+                      <span className="font-mono font-bold text-slate-800 dark:text-slate-200">
+                        Rp {pkgB.result.total_rab.system_calculated_delta.toLocaleString('id-ID')} ({Math.round(pkgB.result.total_rab.system_calculated_percentage * 100)}%)
+                      </span>
+                    </div>
+
+                    <div className="flex items-center justify-between p-2.5 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
+                      <span className="text-slate-500">Status Delta RAB:</span>
+                      <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                        pkgB.result.total_rab.delta_match
+                          ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300'
+                          : 'bg-rose-100 text-rose-800 dark:bg-rose-950 dark:text-rose-300'
+                      }`}>
+                        {pkgB.result.total_rab.delta_match ? '✅ Cocok (Match)' : '⚠️ Terdapat Selisih'}
+                      </span>
+                    </div>
+
+                    <div className="flex items-center justify-between p-2.5 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
+                      <span className="text-slate-500">Jumlah Temuan / Exception:</span>
+                      <span className="font-bold font-mono text-slate-800 dark:text-slate-200">
+                        {pkgB.result.exceptions.length} Temuan ({pkgB.result.exceptions.filter(e => e.priority === 'HIGH').length} HIGH)
+                      </span>
+                    </div>
+
+                    <div className="flex items-center justify-between p-2.5 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
+                      <span className="text-slate-500">Perubahan Teknis (JusTek):</span>
+                      <span className="font-bold font-mono text-slate-800 dark:text-slate-200">
+                        {pkgB.result.changes.length} Item Perubahan
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Modal Footer */}
+            <div className="p-4 border-t border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/60 flex items-center justify-between">
+              <span className="text-xs text-slate-500">
+                Perbandingan bersumber dari data verifikasi otomatis PRIMA PT Air Bersih Jakarta.
+              </span>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowComparisonModal(false);
+                    onSelectPackage(pkgA.id);
+                  }}
+                  className="px-4 py-2 rounded-xl text-xs font-bold text-[#0054a6] bg-sky-50 hover:bg-sky-100 border border-sky-200 transition-colors cursor-pointer"
+                >
+                  Buka Program 1
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowComparisonModal(false);
+                    onSelectPackage(pkgB.id);
+                  }}
+                  className="px-4 py-2 rounded-xl text-xs font-bold text-amber-800 bg-amber-50 hover:bg-amber-100 border border-amber-200 transition-colors cursor-pointer"
+                >
+                  Buka Program 2
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       )}

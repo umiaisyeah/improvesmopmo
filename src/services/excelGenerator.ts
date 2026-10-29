@@ -1,6 +1,7 @@
 import * as XLSX from 'xlsx';
-import { VerificationResult } from '../types';
+import { VerificationResult, DocumentPackage } from '../types';
 import { formatRupiah, formatPercentage, formatQuantity } from './normalizer';
+import { autoCategorizeIpa } from '../utils/ipaCategorizer';
 
 /**
  * Generates the professional 9-sheet PMO Audit Working Paper:
@@ -407,3 +408,133 @@ export function downloadVerificationExcel(result: VerificationResult): void {
   document.body.removeChild(link);
   URL.revokeObjectURL(link.href);
 }
+
+/**
+ * Generates a comprehensive multi-program periodic recapitulation Excel report
+ * for selected programs (or all programs if none specified).
+ */
+export function exportPeriodicRecapitulationExcel(packages: DocumentPackage[], selectedIds?: string[]): Uint8Array {
+  const wb = XLSX.utils.book_new();
+
+  const targetPackages = selectedIds && selectedIds.length > 0
+    ? packages.filter((p) => selectedIds.includes(p.id))
+    : packages;
+
+  // Sheet 1: Rekapitulasi Periodik
+  const recapData: any[][] = [
+    ['PRIMA - LAPORAN REKAPITULASI PERIODIK PROGRAM & VERIFIKASI BAPL'],
+    ['Tanggal Cetak:', new Date().toLocaleString('id-ID')],
+    ['Total Program Tercakup:', targetPackages.length],
+    [],
+    [
+      'No',
+      'Kode Proyek',
+      'Judul Program',
+      'Nama Proyek / Sub-proyek',
+      'Kategori IPA',
+      'Lokasi / Unit',
+      'Kontraktor Pelaksana',
+      'Nomor PO',
+      'Nomor BAPL',
+      'Tanggal BAPL',
+      'RAB Awal (Initial) (Rp)',
+      'RAB Revisi (Revised) (Rp)',
+      'Delta Selisih (Rp)',
+      'Persentase Delta (%)',
+      'Status Delta Match',
+      'Jumlah Temuan',
+      'Status Review PMO',
+    ],
+  ];
+
+  targetPackages.forEach((pkg, index) => {
+    const res = pkg.result;
+    const rab = res?.total_rab;
+    const ipa = pkg.ipa || autoCategorizeIpa(pkg.projectName, res?.project?.location);
+    recapData.push([
+      index + 1,
+      pkg.projectCode || res?.project?.projectCode || '-',
+      pkg.title || res?.project?.projectName || '-',
+      res?.project?.projectName || '-',
+      ipa,
+      res?.project?.location || '-',
+      res?.project?.contractor || '-',
+      res?.project?.poNumber || '-',
+      res?.project?.baplNumber || '-',
+      res?.project?.date || '-',
+      rab?.rab_initial ?? 0,
+      rab?.rab_revised ?? 0,
+      rab?.system_calculated_delta ?? 0,
+      rab ? `${Math.round(rab.system_calculated_percentage * 100)}%` : '0%',
+      rab?.delta_match ? 'MATCH (SINKRON)' : 'MISMATCH (SELISIH)',
+      res?.exceptions?.length ?? 0,
+      res?.human_review?.pmo_review_status ?? 'PENDING',
+    ]);
+  });
+
+  const wsRecap = XLSX.utils.aoa_to_sheet(recapData);
+  wsRecap['!cols'] = [
+    { wch: 6 },
+    { wch: 18 },
+    { wch: 35 },
+    { wch: 35 },
+    { wch: 22 },
+    { wch: 25 },
+    { wch: 28 },
+    { wch: 20 },
+    { wch: 20 },
+    { wch: 16 },
+    { wch: 20 },
+    { wch: 20 },
+    { wch: 20 },
+    { wch: 16 },
+    { wch: 18 },
+    { wch: 15 },
+    { wch: 18 },
+  ];
+  XLSX.utils.book_append_sheet(wb, wsRecap, 'Rekapitulasi Periodik');
+
+  // Sheet 2: Ringkasan Agregat Finansial
+  const totalInitial = targetPackages.reduce((acc, p) => acc + (p.result?.total_rab?.rab_initial || 0), 0);
+  const totalRevised = targetPackages.reduce((acc, p) => acc + (p.result?.total_rab?.rab_revised || 0), 0);
+  const totalDelta = targetPackages.reduce((acc, p) => acc + (p.result?.total_rab?.system_calculated_delta || 0), 0);
+  const matchCount = targetPackages.filter((p) => p.result?.total_rab?.delta_match).length;
+
+  const summaryData: any[][] = [
+    ['PRIMA - RINGKASAN AGREGAT FINANSIAL & REKAPITULASI IPA'],
+    ['Tanggal Ekspor:', new Date().toLocaleString('id-ID')],
+    [],
+    ['Metrik Agregat', 'Nilai Total'],
+    ['Jumlah Program Tercakup', targetPackages.length],
+    ['Total Akumulasi RAB Awal (Baseline)', totalInitial],
+    ['Total Akumulasi RAB Revisi (Revised)', totalRevised],
+    ['Total Akumulasi Delta Finansial', totalDelta],
+    ['Program Sinkron (Delta Match)', matchCount],
+    ['Program Terdapat Selisih (Mismatch)', targetPackages.length - matchCount],
+  ];
+
+  const wsSummary = XLSX.utils.aoa_to_sheet(summaryData);
+  wsSummary['!cols'] = [{ wch: 35 }, { wch: 25 }];
+  XLSX.utils.book_append_sheet(wb, wsSummary, 'Ringkasan Agregat');
+
+  const out = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
+  return out;
+}
+
+export function downloadPeriodicRecapitulationExcel(packages: DocumentPackage[], selectedIds?: string[]): void {
+  const binary = exportPeriodicRecapitulationExcel(packages, selectedIds);
+  const blob = new Blob([binary as any], {
+    type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+  });
+  const dateStr = new Date().toISOString().slice(0, 10);
+  const fileName = `PRIMA_Laporan_Rekapitulasi_Periodik_${dateStr}.xlsx`;
+
+  const link = document.createElement('a');
+  link.href = URL.createObjectURL(blob);
+  link.download = fileName;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(link.href);
+}
+
