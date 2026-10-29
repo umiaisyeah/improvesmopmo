@@ -13,10 +13,11 @@ import {
   Sparkles,
   AlertTriangle
 } from 'lucide-react';
-import { Project, BAType, IPALocation, JustifikasiDocument, BOQItem } from '../types';
+import { Project, BAType, IPALocation, JustifikasiDocument, BOQItem, MasterItem } from '../types';
 
 interface CreateDocumentModalProps {
   projects: Project[];
+  masterItems?: MasterItem[];
   preselectedProjectId?: string;
   onClose: () => void;
   onCreateBeritaAcara: (projectId: string, baData: any) => void;
@@ -25,6 +26,7 @@ interface CreateDocumentModalProps {
 
 export const CreateDocumentModal: React.FC<CreateDocumentModalProps> = ({
   projects,
+  masterItems = [],
   preselectedProjectId,
   onClose,
   onCreateBeritaAcara,

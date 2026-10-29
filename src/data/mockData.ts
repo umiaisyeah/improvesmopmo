@@ -1,4 +1,4 @@
-import { Project, IPALocation, DiscrepancyReport } from '../types';
+import { Project, IPALocation, DiscrepancyReport, MasterItem, MasterItemMapping } from '../types';
 
 export const IPA_LIST: { id: IPALocation; name: string; capacity: string; description: string; color: string }[] = [
   { id: 'IPA Buaran 1', name: 'IPA Buaran 1', capacity: '3.000 Lps', description: 'Instalasi pengolahan air wilayah timur, sumber Saluran Tarum Barat', color: 'from-blue-600 to-cyan-700' },
@@ -7,6 +7,138 @@ export const IPA_LIST: { id: IPALocation; name: string; capacity: string; descri
   { id: 'IPA Pejompongan 1', name: 'IPA Pejompongan 1', capacity: '2.000 Lps', description: 'Instalasi legendaris melayani Jakarta Pusat & Selatan, rehabilitasi clarifier', color: 'from-indigo-600 to-blue-700' },
   { id: 'IPA Pejompongan 2', name: 'IPA Pejompongan 2', capacity: '3.600 Lps', description: 'Pusat distribusi barat & selatan, modernisasi pompa & dosing klorin', color: 'from-sky-600 to-blue-800' },
   { id: 'IPA Pulogadung', name: 'IPA Pulogadung', capacity: '4.000 Lps', description: 'Instalasi kapasitas tertinggi, filtrasi multimedia & backwash otomatis', color: 'from-blue-700 to-indigo-900' },
+];
+
+export const INITIAL_MASTER_ITEMS: MasterItem[] = [
+  {
+    id: 'MI-PIP-01',
+    code: 'PIP-01',
+    canonicalName: 'Pipa HDPE Dia 600mm PN10 SDR17 SNI Air Minum',
+    unit: 'm',
+    category: 'Pekerjaan Perpipaan',
+    aliases: [
+      'Pipa HDPE Dia 600mm PN10 SDR17 Lengkap Sambungan Stub End',
+      'Pipa HDPE OD 600 mm PN 10 SDR 17',
+      'Pemasangan Pipa HDPE 600mm'
+    ],
+    active: true,
+  },
+  {
+    id: 'MI-VLV-04',
+    code: 'VLV-04',
+    canonicalName: 'Butterfly Valve Dia 600mm Flange PN16 Gearbox Cast Iron',
+    unit: 'unit',
+    category: 'Aksesoris & Valve',
+    aliases: [
+      'Butterfly Valve DN 600 PN16 Gearbox Manual',
+      'Butterfly Valve 600mm PN16'
+    ],
+    active: true,
+  },
+  {
+    id: 'MI-CIV-08',
+    code: 'CIV-08',
+    canonicalName: 'Proteksi Jacketing Pipa Beton Bertulang Mutu K-300',
+    unit: 'm3',
+    category: 'Pekerjaan Sipil & Struktur',
+    aliases: [
+      'Proteksi Jacketing Pipa Beton Bertulang Mutu K-300 Pelindung Trase',
+      'Beton K300 Selubung Pipa Pelindung Kabel PLN'
+    ],
+    active: true,
+  },
+  {
+    id: 'MI-GAL-11',
+    code: 'GAL-11',
+    canonicalName: 'Galian Tanah Manual Area Utilitas Khusus',
+    unit: 'm3',
+    category: 'Pekerjaan Tanah',
+    aliases: [
+      'Galian Tanah Manual Area Utilitas Khusus Kedalaman > 2m'
+    ],
+    active: true,
+  },
+  {
+    id: 'MI-STR-02',
+    code: 'STR-02',
+    canonicalName: 'Injection Epoxy Grout Retak Dinding Beton',
+    unit: 'titik',
+    category: 'Pekerjaan Struktur Heritage',
+    aliases: [
+      'Injection Epoxy Grout Retak Dinding Beton Kedalaman > 50mm',
+      'Titik Injeksi Retak Epoxy Dinding Clarifier'
+    ],
+    active: true,
+  },
+  {
+    id: 'MI-LIN-05',
+    code: 'LIN-05',
+    canonicalName: 'Coating Polyurea Food Grade Anti Bakteri Dinding Basah',
+    unit: 'm2',
+    category: 'Pekerjaan Pelapisan & Linning',
+    aliases: [
+      'Coating Polyurea Tahan Kimia Klorin Dinding Air'
+    ],
+    active: true,
+  },
+  {
+    id: 'MI-FLT-01',
+    code: 'FLT-01',
+    canonicalName: 'Media Anthracite Premium Filter Karbon Aktif',
+    unit: 'ton',
+    category: 'Pekerjaan Filter & Media',
+    aliases: [
+      'Media Anthracite Premium Filter Karbon Aktif Bersertifikat',
+      'Anthracite Karbon Filter Premium Grade A'
+    ],
+    active: true,
+  },
+  {
+    id: 'MI-ELC-02',
+    code: 'ELC-02',
+    canonicalName: 'Dosing Pump Smart Digital Inverter PAC 250 L/h',
+    unit: 'unit',
+    category: 'Pekerjaan Otomasi & Elektrikal',
+    aliases: [
+      'Dosing Pump Smart Digital Inverter PAC Kapasitas 250 L/h Auto Control',
+      'Pompa Injeksi PAC Smart Inverter Otomatis 250 Lph'
+    ],
+    active: true,
+  },
+  {
+    id: 'MI-INS-08',
+    code: 'INS-08',
+    canonicalName: 'Streaming Current Monitor (SCM) Sensor Koagulan',
+    unit: 'set',
+    category: 'Pekerjaan Instrumentasi & SCADA',
+    aliases: [
+      'Streaming Current Monitor (SCM) Sensor Kebutuhan Koagulan Real-time',
+      'Sensor Streaming Current Detector Monitoring Koagulan'
+    ],
+    active: true,
+  },
+  {
+    id: 'MI-PMP-03',
+    code: 'PMP-03',
+    canonicalName: 'Pompa Sentrifugal Air Clean Water 150 Lps',
+    unit: 'unit',
+    category: 'Mekanikal & Pompa',
+    aliases: [
+      'Pompa Sentrifugal Air Olahan Capacity 150 Lps Head 45m',
+      'Pompa Centrifugal Distribution Clean Water'
+    ],
+    active: true,
+  }
+];
+
+export const INITIAL_MAPPINGS: MasterItemMapping[] = [
+  { id: 'MAP-1', masterItemId: 'MI-PIP-01', rawText: 'Pipa HDPE Dia 600mm PN10 SDR17 Lengkap Sambungan Stub End', source: 'JT', documentId: 'JST-BR2-001', matchScore: 95, status: 'CONFIRMED' },
+  { id: 'MAP-2', masterItemId: 'MI-PIP-01', rawText: 'Pipa HDPE OD 600 mm PN 10 SDR 17', source: 'BA_MC0', documentId: 'BA-BR2-01', matchScore: 92, status: 'CONFIRMED' },
+  { id: 'MAP-3', masterItemId: 'MI-VLV-04', rawText: 'Butterfly Valve Dia 600mm Flange PN16 Gearbox Cast Iron', source: 'JT', documentId: 'JST-BR2-001', matchScore: 98, status: 'CONFIRMED' },
+  { id: 'MAP-4', masterItemId: 'MI-VLV-04', rawText: 'Butterfly Valve DN 600 PN16 Gearbox Manual', source: 'BA_MC0', documentId: 'BA-BR2-01', matchScore: 90, status: 'CONFIRMED' },
+  { id: 'MAP-5', masterItemId: 'MI-CIV-08', rawText: 'Proteksi Jacketing Pipa Beton Bertulang Mutu K-300 Pelindung Trase', source: 'JT', documentId: 'JST-BR2-001', matchScore: 88, status: 'CONFIRMED' },
+  { id: 'MAP-6', masterItemId: 'MI-CIV-08', rawText: 'Beton K300 Selubung Pipa Pelindung Kabel PLN', source: 'BA_LAPANGAN', documentId: 'BA-BR2-02', matchScore: 82, status: 'CONFIRMED' },
+  { id: 'MAP-7', masterItemId: 'MI-GAL-11', rawText: 'Galian Tanah Manual Area Utilitas Khusus Kedalaman > 2m', source: 'JT', documentId: 'JST-BR2-001', matchScore: 96, status: 'CONFIRMED' },
 ];
 
 export const INITIAL_PROJECTS: Project[] = [

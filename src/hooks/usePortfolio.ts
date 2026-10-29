@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
-import { Project, ProposalModifikasi, DiscrepancyReport, ProjectGate, TigresRef, UserRole } from '../types';
-import { INITIAL_PROJECTS, INITIAL_DISCREPANCIES } from '../data/mockData';
+import { Project, ProposalModifikasi, DiscrepancyReport, ProjectGate, TigresRef, UserRole, MasterItem, MasterItemMapping } from '../types';
+import { INITIAL_PROJECTS, INITIAL_DISCREPANCIES, INITIAL_MASTER_ITEMS, INITIAL_MAPPINGS } from '../data/mockData';
 import { isProjectStopWork } from '../services/deviationRules';
 
 const STORAGE_KEY = 'pmo_portfolio_v1';
@@ -73,6 +73,30 @@ export function usePortfolio() {
     }));
   });
 
+  const [masterItems, setMasterItems] = useState<MasterItem[]>(() => {
+    try {
+      const saved = localStorage.getItem(`${STORAGE_KEY}_master_items`);
+      if (saved) return JSON.parse(saved);
+    } catch {}
+    return INITIAL_MASTER_ITEMS;
+  });
+
+  const [mappings, setMappings] = useState<MasterItemMapping[]>(() => {
+    try {
+      const saved = localStorage.getItem(`${STORAGE_KEY}_mappings`);
+      if (saved) return JSON.parse(saved);
+    } catch {}
+    return INITIAL_MAPPINGS;
+  });
+
+  const [autoMatchThreshold, setAutoMatchThreshold] = useState<number>(() => {
+    try {
+      const saved = localStorage.getItem(`${STORAGE_KEY}_auto_threshold`);
+      if (saved) return Number(saved);
+    } catch {}
+    return 90;
+  });
+
   const [thresholdPct, setThresholdPct] = useState<number>(() => {
     try {
       const saved = localStorage.getItem(`${STORAGE_KEY}_threshold`);
@@ -99,6 +123,18 @@ export function usePortfolio() {
   useEffect(() => {
     localStorage.setItem(`${STORAGE_KEY}_gates`, JSON.stringify(gates));
   }, [gates]);
+
+  useEffect(() => {
+    localStorage.setItem(`${STORAGE_KEY}_master_items`, JSON.stringify(masterItems));
+  }, [masterItems]);
+
+  useEffect(() => {
+    localStorage.setItem(`${STORAGE_KEY}_mappings`, JSON.stringify(mappings));
+  }, [mappings]);
+
+  useEffect(() => {
+    localStorage.setItem(`${STORAGE_KEY}_auto_threshold`, autoMatchThreshold.toString());
+  }, [autoMatchThreshold]);
 
   useEffect(() => {
     localStorage.setItem(`${STORAGE_KEY}_threshold`, thresholdPct.toString());
@@ -353,15 +389,91 @@ export function usePortfolio() {
     }));
   };
 
+  const addMasterItem = (item: Omit<MasterItem, 'id'>) => {
+    const newItem: MasterItem = {
+      ...item,
+      id: `MI-${Date.now()}`,
+      active: true,
+    };
+    setMasterItems((prev) => [newItem, ...prev]);
+  };
+
+  const updateMasterItem = (id: string, updates: Partial<MasterItem>) => {
+    setMasterItems((prev) => prev.map((mi) => (mi.id === id ? { ...mi, ...updates } : mi)));
+  };
+
+  const addAlias = (masterItemId: string, alias: string) => {
+    if (!alias.trim()) return;
+    setMasterItems((prev) =>
+      prev.map((mi) => {
+        if (mi.id === masterItemId) {
+          const cleanAlias = alias.trim();
+          if (mi.aliases.includes(cleanAlias)) return mi;
+          return { ...mi, aliases: [...mi.aliases, cleanAlias] };
+        }
+        return mi;
+      })
+    );
+  };
+
+  const deactivateMasterItem = (id: string) => {
+    setMasterItems((prev) => prev.map((mi) => (mi.id === id ? { ...mi, active: !mi.active } : mi)));
+  };
+
+  const confirmMapping = (mappingId: string, masterItemId: string) => {
+    setMappings((prev) =>
+      prev.map((map) => (map.id === mappingId ? { ...map, masterItemId, status: 'CONFIRMED' } : map))
+    );
+  };
+
+  const rejectMapping = (mappingId: string) => {
+    setMappings((prev) =>
+      prev.map((map) => (map.id === mappingId ? { ...map, status: 'REJECTED' } : map))
+    );
+  };
+
+  const createMasterFromRawText = (
+    mappingId: string,
+    canonicalName: string,
+    code: string,
+    unit: string,
+    category: string
+  ) => {
+    const newMasterId = `MI-${Date.now()}`;
+    const newMaster: MasterItem = {
+      id: newMasterId,
+      code: code || `WBS-${Date.now().toString().slice(-4)}`,
+      canonicalName,
+      unit,
+      category: category || 'Pekerjaan Umum',
+      aliases: [],
+      active: true,
+    };
+    setMasterItems((prev) => [newMaster, ...prev]);
+    setMappings((prev) =>
+      prev.map((m) =>
+        m.id === mappingId
+          ? { ...m, masterItemId: newMasterId, status: 'CONFIRMED' }
+          : m
+      )
+    );
+  };
+
   const resetPortfolio = () => {
     localStorage.removeItem(`${STORAGE_KEY}_projects`);
     localStorage.removeItem(`${STORAGE_KEY}_proposals`);
     localStorage.removeItem(`${STORAGE_KEY}_issues`);
     localStorage.removeItem(`${STORAGE_KEY}_gates`);
     localStorage.removeItem(`${STORAGE_KEY}_threshold`);
+    localStorage.removeItem(`${STORAGE_KEY}_master_items`);
+    localStorage.removeItem(`${STORAGE_KEY}_mappings`);
+    localStorage.removeItem(`${STORAGE_KEY}_auto_threshold`);
     setProjects(INITIAL_PROJECTS);
     setProposals([]);
     setIssues(INITIAL_DISCREPANCIES);
+    setMasterItems(INITIAL_MASTER_ITEMS);
+    setMappings(INITIAL_MAPPINGS);
+    setAutoMatchThreshold(90);
     setThresholdPct(10);
   };
 
@@ -370,6 +482,10 @@ export function usePortfolio() {
     proposals,
     issues,
     gates,
+    masterItems,
+    mappings,
+    autoMatchThreshold,
+    setAutoMatchThreshold,
     thresholdPct,
     userRole,
     setUserRole,
@@ -386,6 +502,14 @@ export function usePortfolio() {
     decideProposal,
     getGate,
     toggleGate,
-    resetPortfolio
+    addMasterItem,
+    updateMasterItem,
+    addAlias,
+    deactivateMasterItem,
+    confirmMapping,
+    rejectMapping,
+    createMasterFromRawText,
+    resetPortfolio,
   };
 }
+

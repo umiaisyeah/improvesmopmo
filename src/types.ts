@@ -672,3 +672,70 @@ export interface DiscrepancyReport {
   suggestedAction: string;
   resolved: boolean;
 }
+
+export interface MasterItem {
+  id: string;
+  code: string;
+  canonicalName: string;
+  unit: string;
+  category: string;
+  aliases: string[];
+  active: boolean;
+}
+
+export interface MasterItemMapping {
+  id: string;
+  masterItemId: string | null;
+  rawText: string;
+  source: 'DED' | 'BA_MC0' | 'BA_LAPANGAN' | 'BA_KOMISIONING' | 'BA_MC100' | 'JT' | 'JF';
+  documentId: string;
+  matchScore: number;
+  status: 'AUTO' | 'CONFIRMED' | 'REJECTED' | 'UNMAPPED';
+}
+
+export type ReconciliationStatus =
+  | 'SESUAI'
+  | 'TANPA_BUKTI'
+  | 'VOLUME_BEDA'
+  | 'MELEBIHI_BA'
+  | 'TIDAK_DIKLAIM'
+  | 'NAMA_BELUM_DIPETAKAN';
+
+export interface ReconciliationRow {
+  masterItemId: string;
+  masterItemCode: string;
+  masterItemName: string;
+  unit: string;
+  unitPrice: number;
+  dedVolume: number;
+  baMc0Volume: number;
+  baMc0Id?: string;
+  baLapanganVolume: number;
+  baLapanganId?: string;
+  jtFieldVolume: number;
+  claimedVolumeDiff: number; // jtFieldVolume - dedVolume
+  baFieldVolumeDiff: number; // baLapanganVolume - dedVolume
+  volumeDelta: number; // abs(jtFieldVolume - baLapanganVolume)
+  deltaPct: number;
+  status: ReconciliationStatus;
+  notes: string;
+}
+
+export interface DocumentChronologyCheck {
+  id: string;
+  title: string;
+  passed: boolean;
+  explanation: string;
+}
+
+export interface ProjectReadinessScore {
+  projectId: string;
+  totalScore: number; // 0 - 100
+  evidenceMatchPct: number;
+  masterMappingPct: number;
+  chronologyPassed: boolean;
+  baCompletenessPct: number;
+  pendingTasks: string[];
+  blockingIssues: ReconciliationRow[];
+}
+

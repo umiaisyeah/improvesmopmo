@@ -15,13 +15,18 @@ import {
   ShieldAlert, 
   ExternalLink,
   HelpCircle,
-  FileSpreadsheet
+  FileSpreadsheet,
+  Lock,
+  AlertOctagon
 } from 'lucide-react';
-import { Project, JustifikasiDocument, UserRole } from '../types';
+import { Project, JustifikasiDocument, UserRole, MasterItem, MasterItemMapping } from '../types';
+import { calculateProjectReadinessScore } from '../services/reconciliation';
 
 interface JustifikasiModalProps {
   project: Project;
   userRole: UserRole;
+  masterItems?: MasterItem[];
+  mappings?: MasterItemMapping[];
   onClose: () => void;
   onAdvanceApproval: (projectId: string, nextStage: number, note: string) => void;
   onRequestRevision: (projectId: string, note: string) => void;
@@ -31,6 +36,8 @@ interface JustifikasiModalProps {
 export const JustifikasiModal: React.FC<JustifikasiModalProps> = ({
   project,
   userRole,
+  masterItems = [],
+  mappings = [],
   onClose,
   onAdvanceApproval,
   onRequestRevision,
@@ -39,9 +46,14 @@ export const JustifikasiModal: React.FC<JustifikasiModalProps> = ({
   const [activeTab, setActiveTab] = useState<'engineering' | 'boq' | 'financial' | 'workflow'>('engineering');
   const [approvalNote, setApprovalNote] = useState('');
   const [showRevisionInput, setShowRevisionInput] = useState(false);
+  const [overrideGate, setOverrideGate] = useState(false);
+  const [overrideReason, setOverrideReason] = useState('');
 
   const justek = project.justifikasi;
   if (!justek) return null;
+
+  const readinessScore = calculateProjectReadinessScore(project, masterItems, mappings);
+  const hasBlockingIssues = readinessScore.blockingIssues.length > 0;
 
   const formatRupiah = (val: number) => {
     return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(val);
@@ -65,12 +77,26 @@ export const JustifikasiModal: React.FC<JustifikasiModalProps> = ({
   };
 
   const handleApprove = () => {
+    if (hasBlockingIssues && !overrideGate) {
+      alert(`Persetujuan diblokir oleh Submission Gate karena terdapat ${readinessScore.blockingIssues.length} temuan diskrepansi kritis (mis: item tanpa bukti BA / melebihi BA / nama belum dipetakan). Silakan centang override dan berikan alasan tertulis.`);
+      return;
+    }
+    if (hasBlockingIssues && overrideGate && !overrideReason.trim()) {
+      alert('Wajib mengisi alasan tertulis untuk melakukan override Submission Gate.');
+      return;
+    }
+
     const nextStage = justek.currentApprovalStage + 1;
-    const defaultNote = approvalNote || (
+    let defaultNote = approvalNote || (
       justek.currentApprovalStage === 5
         ? `Adendum Kontrak disahkan secara resmi oleh Kepala Departemen PMO pada ${new Date().toLocaleDateString('id-ID')}`
         : `Disetujui oleh ${userRole} pada ${new Date().toLocaleDateString('id-ID')}`
     );
+
+    if (hasBlockingIssues && overrideGate) {
+      defaultNote += ` [OVERRIDE GATE BY ${userRole}: ${overrideReason.trim()}]`;
+    }
+
     onAdvanceApproval(project.id, nextStage, defaultNote);
     setApprovalNote('');
   };
@@ -161,6 +187,61 @@ export const JustifikasiModal: React.FC<JustifikasiModalProps> = ({
               );
             })}
           </div>
+        </div>
+
+        {/* Readiness Score & Submission Gate Banner */}
+        <div className={`px-5 py-2.5 border-b text-xs flex flex-col sm:flex-row sm:items-center justify-between gap-2 ${
+          hasBlockingIssues
+            ? 'bg-amber-50 border-amber-200 text-amber-900'
+            : 'bg-emerald-50 border-emerald-200 text-emerald-900'
+        }`}>
+          <div className="flex items-center gap-2.5">
+            <div className={`w-8 h-8 rounded-lg flex items-center justify-center font-black text-white shrink-0 ${
+              readinessScore.totalScore >= 80 ? 'bg-emerald-600' : readinessScore.totalScore >= 50 ? 'bg-amber-600' : 'bg-rose-600'
+            }`}>
+              {readinessScore.totalScore}
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="font-bold">Skor Kesiapan Dokumen: {readinessScore.totalScore}/100</span>
+                <span className={`px-2 py-0.2 rounded text-[10px] font-extrabold uppercase ${
+                  readinessScore.totalScore >= 80 && !hasBlockingIssues
+                    ? 'bg-emerald-200 text-emerald-900'
+                    : 'bg-amber-200 text-amber-900'
+                }`}>
+                  {readinessScore.totalScore >= 80 && !hasBlockingIssues ? 'SIAP DISAHKAN' : 'PERLU PERHATIAN GATE'}
+                </span>
+              </div>
+              <p className="text-[11px] opacity-90 mt-0.5">
+                {hasBlockingIssues
+                  ? `Terdapat ${readinessScore.blockingIssues.length} temuan diskrepansi kritis (${readinessScore.blockingIssues.map(b => b.masterItemName).join(', ')}).`
+                  : 'Seluruh item dan berita acara telah terverifikasi sinkron & konsisten.'}
+              </p>
+            </div>
+          </div>
+
+          {hasBlockingIssues && canApproveCurrentStage() && (
+            <div className="flex items-center gap-2 bg-white/80 p-2 rounded-lg border border-amber-300">
+              <label className="flex items-center gap-1.5 cursor-pointer text-[11px] font-bold text-amber-900">
+                <input
+                  type="checkbox"
+                  checked={overrideGate}
+                  onChange={(e) => setOverrideGate(e.target.checked)}
+                  className="rounded text-amber-600 focus:ring-amber-500 cursor-pointer"
+                />
+                <span>Override Gate ({userRole})</span>
+              </label>
+              {overrideGate && (
+                <input
+                  type="text"
+                  placeholder="Alasan tertulis override..."
+                  value={overrideReason}
+                  onChange={(e) => setOverrideReason(e.target.value)}
+                  className="px-2 py-1 text-[11px] border border-amber-300 rounded bg-white font-normal"
+                />
+              )}
+            </div>
+          )}
         </div>
 
         {/* Tab Navigation */}

@@ -60,6 +60,7 @@ import { DeletePackageModal } from './components/DeletePackageModal';
 import { Sidebar, TabType } from './components/Sidebar';
 import { WelcomeView } from './components/WelcomeView';
 import { ProgramDatabaseView } from './components/ProgramDatabaseView';
+import { PortfolioWorkspace } from './components/PortfolioWorkspace';
 
 export const EMPTY_RESULT: VerificationResult = {
   project: {
@@ -307,6 +308,24 @@ export default function App() {
         return 'Exceptions & Temuan Audit';
       case 'raw_bapl':
         return 'Hasil OCR & Raw BAPL';
+      case 'p_overview':
+        return 'Portofolio: Ringkasan 6 IPA';
+      case 'p_projects':
+        return 'Portofolio: Project & Justifikasi';
+      case 'p_timeline':
+        return 'Portofolio: Timeline Pengerjaan';
+      case 'p_ba':
+        return 'Portofolio: Berita Acara Digital';
+      case 'p_verification':
+        return 'Portofolio: Cek Bukti & Nama Item';
+      case 'p_proposal':
+        return 'Portofolio: Proposal Modifikasi';
+      case 'p_ded':
+        return 'Portofolio: Analitik DED & Gate MC-0';
+      case 'p_master':
+        return 'Portofolio: Master Item Baku';
+      case 'p_reconcile':
+        return 'Portofolio: Rekonsiliasi JT/JF vs BA';
       default:
         return 'Dashboard Executive';
     }
@@ -637,62 +656,77 @@ export default function App() {
               />
             )}
 
-            {/* Empty State Banner when no packages uploaded: Preserves Full Dashboard Layout */}
-            {packages.length === 0 && !isProcessing && (
-              <div className="bg-gradient-to-r from-sky-50 via-amber-50/50 to-white dark:from-slate-900 dark:via-slate-900 dark:to-slate-850 border border-amber-300 dark:border-amber-500/50 rounded-2xl p-4 sm:p-5 flex flex-col md:flex-row items-start md:items-center justify-between gap-4 shadow-xs">
-                <div className="flex items-start gap-3.5">
-                  <div className="w-10 h-10 rounded-xl bg-amber-400 text-slate-950 flex items-center justify-center shrink-0 font-black shadow-xs">
-                    <FolderSync className="w-5 h-5" />
-                  </div>
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <span className="px-2 py-0.5 rounded-full text-[10px] font-extrabold uppercase bg-amber-400 text-slate-950">
-                        Status: Belum Ada Dokumen
-                      </span>
-                      <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">
-                        Layout dashboard dipertahankan
-                      </span>
-                    </div>
-                    <h4 className="text-sm font-bold text-slate-900 dark:text-white mt-1">
-                      Belum Ada Pasangan Program atau Dokumen Proyek yang Diunggah
-                    </h4>
-                    <p className="text-xs text-slate-600 dark:text-slate-300 mt-0.5 max-w-2xl">
-                      Dashboard tetap menampilkan struktur lengkap dengan nilai awal 0. Setiap berkas yang Anda unggah akan otomatis dikategorikan ke salah satu dari 6 IPA Jakarta (IPA Buaran 1, 2, 3, IPA Pejompongan 1, 2, atau IPA Pulogadung).
-                    </p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-2 shrink-0 w-full md:w-auto">
-                  <button
-                    type="button"
-                    onClick={() => setShowUpload(true)}
-                    className="w-full md:w-auto inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-xs font-extrabold text-white bg-gradient-to-r from-[#0054a6] via-[#0080c8] to-amber-500 hover:from-[#004690] hover:to-amber-600 shadow-xs ring-2 ring-amber-400/30 transition-all cursor-pointer"
-                  >
-                    <UploadCloud className="w-4 h-4" />
-                    <span>Upload Program / Dokumen</span>
-                  </button>
-                </div>
-              </div>
-            )}
+            {/* Compute if current tab is portfolio tab */}
+            {(() => {
+              const isPortfolioTab = activeTab.startsWith('p_');
 
-          {/* Verification Workspace (Dashboard, Technical, Financial, etc.) */}
-          <div className="space-y-5">
-            {/* Document Package Bar: Lists every uploaded and processed document pair */}
-            {packages.length > 0 && !isProcessing && (
-              <DocumentPackageBar
-                packages={packages}
-                activePackageId={activePackageId}
-                onSelectPackage={(id) => {
-                  setActivePackageId(id);
-                  setShowUpload(false);
-                }}
-                onDeletePackage={handleDeletePackage}
-                onRequestDeletePackage={(pkg) => setPackageToDelete(pkg)}
-                onRenamePackage={handleRenamePackage}
-                onAddNewPackage={() => setShowUpload(true)}
-                onExportBackup={handleExportBackup}
-                onImportBackup={handleImportBackup}
-              />
-            )}
+              return (
+                <>
+                  {/* Empty State Banner when no packages uploaded: Preserves Full Dashboard Layout for standard tabs */}
+                  {packages.length === 0 && !isProcessing && !isPortfolioTab && (
+                    <div className="bg-gradient-to-r from-sky-50 via-amber-50/50 to-white dark:from-slate-900 dark:via-slate-900 dark:to-slate-850 border border-amber-300 dark:border-amber-500/50 rounded-2xl p-4 sm:p-5 flex flex-col md:flex-row items-start md:items-center justify-between gap-4 shadow-xs">
+                      <div className="flex items-start gap-3.5">
+                        <div className="w-10 h-10 rounded-xl bg-amber-400 text-slate-950 flex items-center justify-center shrink-0 font-black shadow-xs">
+                          <FolderSync className="w-5 h-5" />
+                        </div>
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <span className="px-2 py-0.5 rounded-full text-[10px] font-extrabold uppercase bg-amber-400 text-slate-950">
+                              Status: Belum Ada Dokumen
+                            </span>
+                            <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">
+                              Layout dashboard dipertahankan
+                            </span>
+                          </div>
+                          <h4 className="text-sm font-bold text-slate-900 dark:text-white mt-1">
+                            Belum Ada Pasangan Program atau Dokumen Proyek yang Diunggah
+                          </h4>
+                          <p className="text-xs text-slate-600 dark:text-slate-300 mt-0.5 max-w-2xl">
+                            Dashboard tetap menampilkan struktur lengkap dengan nilai awal 0. Setiap berkas yang Anda unggah akan otomatis dikategorikan ke salah satu dari 6 IPA Jakarta (IPA Buaran 1, 2, 3, IPA Pejompongan 1, 2, atau IPA Pulogadung).
+                          </p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2 shrink-0 w-full md:w-auto">
+                        <button
+                          type="button"
+                          onClick={() => setShowUpload(true)}
+                          className="w-full md:w-auto inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-xs font-extrabold text-white bg-gradient-to-r from-[#0054a6] via-[#0080c8] to-amber-500 hover:from-[#004690] hover:to-amber-600 shadow-xs ring-2 ring-amber-400/30 transition-all cursor-pointer"
+                        >
+                          <UploadCloud className="w-4 h-4" />
+                          <span>Upload Program / Dokumen</span>
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Verification Workspace (Dashboard, Technical, Financial, etc. vs Portfolio Workspace) */}
+                  <div className="space-y-5">
+                    {/* Render PortfolioWorkspace if on a portfolio tab */}
+                    {isPortfolioTab ? (
+                      <PortfolioWorkspace
+                        activeTab={activeTab}
+                        onOpenDocumentVerificationEngine={() => setActiveTab('dashboard')}
+                        currentUser={currentUser}
+                      />
+                    ) : (
+                      <>
+                        {/* Document Package Bar: Lists every uploaded and processed document pair */}
+                        {packages.length > 0 && !isProcessing && (
+                          <DocumentPackageBar
+                            packages={packages}
+                            activePackageId={activePackageId}
+                            onSelectPackage={(id) => {
+                              setActivePackageId(id);
+                              setShowUpload(false);
+                            }}
+                            onDeletePackage={handleDeletePackage}
+                            onRequestDeletePackage={(pkg) => setPackageToDelete(pkg)}
+                            onRenamePackage={handleRenamePackage}
+                            onAddNewPackage={() => setShowUpload(true)}
+                            onExportBackup={handleExportBackup}
+                            onImportBackup={handleImportBackup}
+                          />
+                        )}
 
             {/* Tab Navigation & Content */}
             {result && !isProcessing && (
@@ -877,6 +911,7 @@ export default function App() {
                     {activeTab === 'dashboard' && (
                       <DashboardView
                         result={result}
+                        packages={packages}
                         onSelectTab={(tab) => setActiveTab(tab as TabType)}
                         onDeleteCurrentPackage={
                           activePackage ? () => setPackageToDelete(activePackage) : undefined
@@ -931,7 +966,12 @@ export default function App() {
                   </motion.div>
                 </div>
               )}
-            </div>
+            </>
+          )}
+        </div>
+      </>
+    );
+  })()}
         </main>
 
         {/* Footer */}

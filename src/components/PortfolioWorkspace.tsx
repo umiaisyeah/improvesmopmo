@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   Building2, 
   Filter, 
@@ -12,9 +12,10 @@ import {
   FileSpreadsheet, 
   BarChart2, 
   Sliders,
-  RotateCcw
+  RotateCcw,
+  Lock
 } from 'lucide-react';
-import { Project, IPALocation, UserRole, TigresRef } from '../types';
+import { Project, IPALocation, UserRole, TigresRef, PrimaUser } from '../types';
 import { IPA_LIST } from '../data/mockData';
 import { ExecutiveOverview } from './ExecutiveOverview';
 import { ProjectList } from './ProjectList';
@@ -23,6 +24,8 @@ import { BeritaAcaraList } from './BeritaAcaraList';
 import { VerificationEngineView } from './VerificationEngineView';
 import { ProposalModifikasiView } from './ProposalModifikasiView';
 import { DedAnalyticsView } from './DedAnalyticsView';
+import { MasterItemView } from './MasterItemView';
+import { ReconciliationView } from './ReconciliationView';
 import { JustifikasiModal } from './JustifikasiModal';
 import { BeritaAcaraModal } from './BeritaAcaraModal';
 import { CreateDocumentModal } from './CreateDocumentModal';
@@ -32,11 +35,13 @@ import { isProjectStopWork } from '../services/deviationRules';
 interface PortfolioWorkspaceProps {
   activeTab: string; // e.g. 'p_overview', 'p_projects', etc.
   onOpenDocumentVerificationEngine: () => void;
+  currentUser?: PrimaUser | null;
 }
 
 export const PortfolioWorkspace: React.FC<PortfolioWorkspaceProps> = ({
   activeTab,
   onOpenDocumentVerificationEngine,
+  currentUser,
 }) => {
   const {
     projects,
@@ -47,6 +52,17 @@ export const PortfolioWorkspace: React.FC<PortfolioWorkspaceProps> = ({
     userRole,
     setUserRole,
     setThreshold,
+    masterItems,
+    mappings,
+    autoMatchThreshold,
+    setAutoMatchThreshold,
+    addMasterItem,
+    updateMasterItem,
+    addAlias,
+    deactivateMasterItem,
+    confirmMapping,
+    rejectMapping,
+    createMasterFromRawText,
     createBeritaAcara,
     createJustifikasi,
     signBA,
@@ -61,6 +77,19 @@ export const PortfolioWorkspace: React.FC<PortfolioWorkspaceProps> = ({
     toggleGate,
     resetPortfolio
   } = usePortfolio();
+
+  // Sync userRole from currentUser when logged in
+  useEffect(() => {
+    if (currentUser?.role) {
+      if (currentUser.role === 'PMO') {
+        setUserRole('Site Engineer PMO');
+      } else if (currentUser.role === 'PLANNING') {
+        setUserRole('Lead Technical Reviewer');
+      } else if (currentUser.role === 'PGO') {
+        setUserRole('Kepala Departemen PMO');
+      }
+    }
+  }, [currentUser, setUserRole]);
 
   const [selectedIpa, setSelectedIpa] = useState<IPALocation | 'ALL'>('ALL');
   const [modalProjectId, setModalProjectId] = useState<string | null>(null);
@@ -111,18 +140,28 @@ export const PortfolioWorkspace: React.FC<PortfolioWorkspaceProps> = ({
           </div>
 
           <div className="flex items-center gap-1.5 bg-slate-50 border border-slate-200 rounded-xl px-3 py-2">
-            <User className="w-3.5 h-3.5 text-indigo-600" />
-            <span className="font-semibold text-slate-600">Simulasi Peran:</span>
-            <select
-              value={userRole}
-              onChange={(e) => setUserRole(e.target.value as UserRole)}
-              className="bg-transparent font-bold text-slate-900 focus:outline-none cursor-pointer"
-            >
-              <option value="Site Engineer PMO">Site Engineer PMO</option>
-              <option value="Lead Technical Reviewer">Lead Technical Reviewer</option>
-              <option value="Financial & Commercial PMO">Financial & Commercial PMO</option>
-              <option value="Kepala Departemen PMO">Kepala Departemen PMO</option>
-            </select>
+            {currentUser ? (
+              <Lock className="w-3.5 h-3.5 text-amber-600" />
+            ) : (
+              <User className="w-3.5 h-3.5 text-indigo-600" />
+            )}
+            <span className="font-semibold text-slate-600">Peran Portofolio:</span>
+            {currentUser ? (
+              <span className="font-bold text-slate-900 bg-amber-100 text-amber-900 px-2 py-0.5 rounded text-[11px]">
+                {userRole} (Pengguna: {currentUser.name})
+              </span>
+            ) : (
+              <select
+                value={userRole}
+                onChange={(e) => setUserRole(e.target.value as UserRole)}
+                className="bg-transparent font-bold text-slate-900 focus:outline-none cursor-pointer"
+              >
+                <option value="Site Engineer PMO">Site Engineer PMO</option>
+                <option value="Lead Technical Reviewer">Lead Technical Reviewer</option>
+                <option value="Financial & Commercial PMO">Financial & Commercial PMO</option>
+                <option value="Kepala Departemen PMO">Kepala Departemen PMO</option>
+              </select>
+            )}
           </div>
         </div>
 
@@ -266,11 +305,40 @@ export const PortfolioWorkspace: React.FC<PortfolioWorkspaceProps> = ({
         />
       )}
 
+      {activeTab === 'p_master' && (
+        <MasterItemView
+          masterItems={masterItems}
+          mappings={mappings}
+          autoMatchThreshold={autoMatchThreshold}
+          setAutoMatchThreshold={setAutoMatchThreshold}
+          onAddMasterItem={addMasterItem}
+          onUpdateMasterItem={updateMasterItem}
+          onAddAlias={addAlias}
+          onDeactivateMasterItem={deactivateMasterItem}
+          onConfirmMapping={confirmMapping}
+          onRejectMapping={rejectMapping}
+          onCreateMasterFromRawText={createMasterFromRawText}
+        />
+      )}
+
+      {activeTab === 'p_reconcile' && (
+        <ReconciliationView
+          projects={projects}
+          masterItems={masterItems}
+          mappings={mappings}
+          onLinkItemToBA={linkItemToBA}
+          onOpenProjectDetail={handleOpenProjectDetail}
+          onOpenBaDetail={handleOpenBaDetail}
+        />
+      )}
+
       {/* Modals */}
       {modalProjectId && currentModalProject && (
         <JustifikasiModal
           project={currentModalProject}
           userRole={userRole}
+          masterItems={masterItems}
+          mappings={mappings}
           onClose={() => setModalProjectId(null)}
           onAdvanceApproval={(projId, nextStage, comments) => advanceApproval(projId, nextStage, comments)}
           onRequestRevision={(projId, comments) => requestRevision(projId, comments)}
@@ -291,6 +359,7 @@ export const PortfolioWorkspace: React.FC<PortfolioWorkspaceProps> = ({
       {showCreateModal && (
         <CreateDocumentModal
           projects={projects}
+          masterItems={masterItems}
           preselectedProjectId={preselectedProjIdForCreate}
           onClose={() => setShowCreateModal(false)}
           onCreateBeritaAcara={(projId, baData) => {

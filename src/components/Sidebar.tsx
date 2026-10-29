@@ -23,6 +23,10 @@ import {
   ShieldCheck,
   Building2,
   Plus,
+  Database,
+  Calendar,
+  CheckSquare,
+  Scale,
 } from 'lucide-react';
 import { DocumentPackage, VerificationResult } from '../types';
 import { DashboardLogo } from './DashboardLogo';
@@ -36,14 +40,23 @@ export type TabType =
   | 'traceability'
   | 'evidence'
   | 'exceptions'
-  | 'raw_bapl';
+  | 'raw_bapl'
+  | 'p_overview'
+  | 'p_projects'
+  | 'p_timeline'
+  | 'p_ba'
+  | 'p_verification'
+  | 'p_proposal'
+  | 'p_ded'
+  | 'p_master'
+  | 'p_reconcile';
 
 interface NavItem {
   id: TabType;
   label: string;
   shortLabel: string;
   icon: React.ElementType;
-  group: 'main' | 'verification' | 'evidence' | 'compliance';
+  group: 'main' | 'verification' | 'evidence' | 'compliance' | 'portfolio';
   getBadge?: (result: VerificationResult | null, highExceptions: number) => {
     text: string;
     variant: 'default' | 'danger' | 'success' | 'warning' | 'info';
@@ -140,6 +153,69 @@ const NAV_ITEMS: NavItem[] = [
       }
       return null;
     },
+  },
+  {
+    id: 'p_overview',
+    label: 'Ringkasan 6 IPA',
+    shortLabel: '6 IPA',
+    icon: Building2,
+    group: 'portfolio',
+  },
+  {
+    id: 'p_projects',
+    label: 'Project & Justifikasi',
+    shortLabel: 'Project',
+    icon: FileText,
+    group: 'portfolio',
+  },
+  {
+    id: 'p_timeline',
+    label: 'Timeline Pengerjaan',
+    shortLabel: 'Timeline',
+    icon: Calendar,
+    group: 'portfolio',
+  },
+  {
+    id: 'p_ba',
+    label: 'Berita Acara Digital',
+    shortLabel: 'BA Digital',
+    icon: CheckSquare,
+    group: 'portfolio',
+  },
+  {
+    id: 'p_verification',
+    label: 'Cek Bukti & Nama Item',
+    shortLabel: 'Cek Bukti',
+    icon: FileCheck,
+    group: 'portfolio',
+  },
+  {
+    id: 'p_proposal',
+    label: 'Proposal Modifikasi',
+    shortLabel: 'Proposal',
+    icon: ShieldAlert,
+    group: 'portfolio',
+  },
+  {
+    id: 'p_ded',
+    label: 'Analitik DED & Gate MC-0',
+    shortLabel: 'DED & Gate',
+    icon: Sliders,
+    group: 'portfolio',
+  },
+  {
+    id: 'p_master',
+    label: 'Master Item',
+    shortLabel: 'Master Item',
+    icon: Database,
+    group: 'portfolio',
+  },
+  {
+    id: 'p_reconcile',
+    label: 'Rekonsiliasi JT/JF vs BA',
+    shortLabel: 'Rekonsiliasi',
+    icon: Scale,
+    group: 'portfolio',
   },
 ];
 

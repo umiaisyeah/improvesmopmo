@@ -22,27 +22,73 @@ import {
   FileCheck,
   ArrowRight,
 } from 'lucide-react';
-import { VerificationResult } from '../types';
+import { VerificationResult, DocumentPackage } from '../types';
 import { formatRupiah, formatPercentage, formatQuantity } from '../services/normalizer';
 import { downloadVerificationExcel } from '../services/excelGenerator';
 import { downloadVerificationPdf } from '../services/pdfGenerator';
 import { DeadlineReminderCard } from './DeadlineReminderCard';
 import { calculateDeadlineInfo } from '../utils/deadlineChecker';
+import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend } from 'recharts';
 
 interface DashboardViewProps {
   result: VerificationResult;
+  packages?: DocumentPackage[];
   onSelectTab: (tabId: string) => void;
   onDeleteCurrentPackage?: () => void;
 }
 
 export const DashboardView: React.FC<DashboardViewProps> = ({
   result,
+  packages,
   onSelectTab,
   onDeleteCurrentPackage,
 }) => {
   const { project, summary, total_rab, exceptions, technical_summary } = result;
   const [dashboardItemFilter, setDashboardItemFilter] = useState<'all' | 'changed'>('all');
   const deadlineInfo = calculateDeadlineInfo(project, result.generated_at);
+
+  // Compute monthly incoming document trend categorized by match / mismatch
+  const chartData = React.useMemo(() => {
+    const pkgs = packages && packages.length > 0 ? packages : [
+      {
+        id: 'mock-current',
+        projectCode: project.projectCode,
+        projectName: project.projectName,
+        title: project.projectName,
+        baplFiles: [],
+        excelFileName: 'rab.xlsx',
+        supportingFiles: [],
+        createdAt: result.generated_at || new Date().toISOString(),
+        status: 'COMPLETED',
+        result: result,
+      } as DocumentPackage
+    ];
+
+    const map = new Map<string, { month: string; match: number; mismatch: number; total: number }>();
+
+    pkgs.forEach((pkg) => {
+      const dateObj = new Date(pkg.createdAt || Date.now());
+      const monthKey = `${dateObj.getFullYear()}-${String(dateObj.getMonth() + 1).padStart(2, '0')}`;
+      const monthLabel = dateObj.toLocaleDateString('id-ID', { month: 'short', year: 'numeric' });
+
+      if (!map.has(monthKey)) {
+        map.set(monthKey, { month: monthLabel, match: 0, mismatch: 0, total: 0 });
+      }
+
+      const entry = map.get(monthKey)!;
+      entry.total += 1;
+      const isMatch = pkg.result?.total_rab?.delta_match ?? true;
+      if (isMatch) {
+        entry.match += 1;
+      } else {
+        entry.mismatch += 1;
+      }
+    });
+
+    return Array.from(map.entries())
+      .sort(([a], [b]) => a.localeCompare(b))
+      .map(([_, val]) => val);
+  }, [packages, result]);
 
   return (
     <div className="space-y-6">
@@ -157,6 +203,54 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
           <div>
             <span className="text-slate-400 block font-medium">Tanggal Pemeriksaan</span>
             <span className="font-semibold text-slate-800 block">{project.date}</span>
+          </div>
+        </div>
+
+        {/* Recharts Monthly Ingress Trend & Match/Mismatch Categorization */}
+        <div className="mt-6 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-5 shadow-xs space-y-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+            <div>
+              <h3 className="text-sm font-black text-slate-900 dark:text-white flex items-center gap-2">
+                <Layers className="w-4 h-4 text-[#0054a6]" />
+                <span>Tren Bulanan Masuk Dokumen (Kategori Sesuai vs Mismatch)</span>
+              </h3>
+              <p className="text-xs text-slate-500 dark:text-slate-400">
+                Analisis tren volume dokumen masuk per bulan berdasarkan tanggal pembuatan (createdAt) terbagi atas status kesesuaian RAB.
+              </p>
+            </div>
+            <div className="flex items-center gap-3 text-xs font-semibold shrink-0">
+              <div className="flex items-center gap-1.5">
+                <span className="w-3 h-3 rounded bg-emerald-500" />
+                <span className="text-slate-700 dark:text-slate-300">Sesuai (Match)</span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <span className="w-3 h-3 rounded bg-rose-500" />
+                <span className="text-slate-700 dark:text-slate-300">Mismatch (Selisih)</span>
+              </div>
+            </div>
+          </div>
+
+          <div className="h-64 w-full pt-2">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={chartData} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" opacity={0.6} />
+                <XAxis dataKey="month" stroke="#64748b" fontSize={11} />
+                <YAxis stroke="#64748b" fontSize={11} allowDecimals={false} />
+                <Tooltip
+                  contentStyle={{
+                    backgroundColor: '#0f172a',
+                    borderRadius: '12px',
+                    color: '#fff',
+                    border: 'none',
+                    fontSize: '12px',
+                    boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.3)',
+                  }}
+                />
+                <Legend />
+                <Bar dataKey="match" name="Sesuai (Match)" fill="#10b981" radius={[6, 6, 0, 0]} />
+                <Bar dataKey="mismatch" name="Mismatch (Selisih)" fill="#f43f5e" radius={[6, 6, 0, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
           </div>
         </div>
 

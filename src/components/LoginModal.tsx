@@ -183,10 +183,6 @@ export const LoginModal: React.FC<LoginModalProps> = ({
               );
             })}
           </div>
-
-          <div className="p-3 rounded-xl bg-sky-50 dark:bg-sky-950/40 border border-sky-200 dark:border-sky-800 text-center text-xs text-sky-900 dark:text-sky-300">
-            <span>💡 Akses langsung tanpa kata sandi untuk efisiensi audit &amp; verifikasi proyek operasional PAM Jaya / ABJ.</span>
-          </div>
         </div>
 
         {/* Modal Footer */}
