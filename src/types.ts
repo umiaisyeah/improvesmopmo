@@ -503,7 +503,7 @@ export interface ProposalModifikasi {
   projectId: string;
   projectCode: string;
   projectName: string;
-  ipa: IPALocation;
+  ipa?: IPALocation;
   proposalNumber: string;
   triggerDeviationPct: number;
   netVarianceValue: number;
@@ -577,7 +577,7 @@ export interface DigitalSignatory {
 export interface BeritaAcara {
   id: string;
   projectId: string;
-  ipa: IPALocation;
+  ipa?: IPALocation;
   baType: BAType;
   baNumber: string; // e.g. "014/BA-MC0/PMO-CYC/ABJ/IV/2026"
   date: string;
@@ -650,7 +650,7 @@ export interface Project {
   id: string;
   code: string; // e.g., "CYC-BR1-2026-01"
   name: string;
-  ipa: IPALocation;
+  ipa?: IPALocation;
   contractorName: string;
   supervisingConsultant: string;
   startDate: string;

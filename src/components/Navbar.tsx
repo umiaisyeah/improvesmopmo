@@ -16,8 +16,6 @@ import { UserRole, IPALocation } from '../types';
 interface NavbarProps {
   currentTab: 'overview' | 'projects' | 'verification' | 'beritaAcara' | 'timeline';
   setCurrentTab: (tab: 'overview' | 'projects' | 'verification' | 'beritaAcara' | 'timeline') => void;
-  selectedIpa: IPALocation | 'ALL';
-  setSelectedIpa: (ipa: IPALocation | 'ALL') => void;
   userRole: UserRole;
   setUserRole: (role: UserRole) => void;
   unresolvedIssueCount: number;
@@ -27,8 +25,6 @@ interface NavbarProps {
 export const Navbar: React.FC<NavbarProps> = ({
   currentTab,
   setCurrentTab,
-  selectedIpa,
-  setSelectedIpa,
   userRole,
   setUserRole,
   unresolvedIssueCount,
@@ -167,37 +163,7 @@ export const Navbar: React.FC<NavbarProps> = ({
           </div>
         </div>
 
-        {/* Sub-bar Filter IPA Selection */}
-        <div className="py-2.5 border-t border-slate-100 flex items-center justify-between overflow-x-auto no-scrollbar gap-2 text-xs">
-          <div className="flex items-center gap-1.5 text-slate-500 font-medium whitespace-nowrap">
-            <span>Filter Unit IPA:</span>
-          </div>
-          <div className="flex items-center gap-1.5">
-            <button
-              onClick={() => setSelectedIpa('ALL')}
-              className={`px-2.5 py-1 rounded-md font-medium transition-colors whitespace-nowrap ${
-                selectedIpa === 'ALL'
-                  ? 'bg-slate-900 text-white shadow-xs'
-                  : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-              }`}
-            >
-              Semua 6 IPA
-            </button>
-            {(['IPA Buaran 1', 'IPA Buaran 2', 'IPA Buaran 3', 'IPA Pejompongan 1', 'IPA Pejompongan 2', 'IPA Pulogadung'] as IPALocation[]).map((ipa) => (
-              <button
-                key={ipa}
-                onClick={() => setSelectedIpa(ipa)}
-                className={`px-2.5 py-1 rounded-md font-medium transition-colors whitespace-nowrap ${
-                  selectedIpa === ipa
-                    ? 'bg-blue-700 text-white shadow-xs'
-                    : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
-                }`}
-              >
-                {ipa}
-              </button>
-            ))}
-          </div>
-        </div>
+
       </div>
     </header>
   );
