@@ -444,26 +444,30 @@ export const ExceptionsView: React.FC<ExceptionsViewProps> = ({
                     </div>
 
                     <div className="flex items-center gap-2 shrink-0">
+                      {(cat === 'DISCREPANCY' || cat === 'UNJUSTIFIED') && docRef.page_or_sheet && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                              if (onNavigateToRawBapl && typeof docRef.page_or_sheet === 'number') {
+                                  onNavigateToRawBapl(Number(docRef.page_or_sheet));
+                              }
+                          }}
+                          className="px-3 py-1.5 rounded-xl bg-white/10 hover:bg-white/20 text-white font-bold text-xs flex items-center gap-1.5 transition-all cursor-pointer border border-white/15"
+                          title="Navigasi ke lokasi temuan di dokumen asli"
+                        >
+                          <ExternalLink className="w-3.5 h-3.5 text-cyan-300" />
+                          <span>Navigasi Dokumen (Hal {docRef.page_or_sheet})</span>
+                        </button>
+                      )}
+                      
                       <button
                         type="button"
                         onClick={() => setSelectedModalDoc({ exc, docRef })}
                         className="px-3 py-1.5 rounded-xl bg-gradient-to-r from-cyan-400 to-blue-500 hover:from-cyan-300 hover:to-blue-400 text-slate-950 font-black text-xs shadow-xs flex items-center gap-1.5 transition-all cursor-pointer hover:scale-105"
                       >
                         <Eye className="w-3.5 h-3.5 text-slate-950" />
-                        <span>Pratinjau Dokumen &amp; Penanda Visual Beda</span>
+                        <span>Pratinjau</span>
                       </button>
-
-                      {onNavigateToRawBapl && typeof docRef.page_or_sheet === 'number' && (
-                        <button
-                          type="button"
-                          onClick={() => onNavigateToRawBapl(Number(docRef.page_or_sheet))}
-                          className="px-2.5 py-1.5 rounded-xl bg-white/10 hover:bg-white/20 text-white font-bold text-xs flex items-center gap-1 transition-all cursor-pointer border border-white/15"
-                          title="Buka langsung di Halaman Raw BAPL"
-                        >
-                          <ExternalLink className="w-3.5 h-3.5 text-cyan-300" />
-                          <span>Hal {docRef.page_or_sheet} (Raw BAPL)</span>
-                        </button>
-                      )}
                     </div>
                   </div>
 

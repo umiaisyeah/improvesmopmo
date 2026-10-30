@@ -311,6 +311,7 @@ export interface ExceptionRecord {
 export interface RawBaplPage {
   page: number;
   source: string;
+  imageUrl?: string;
   extracted_text: string;
   ocr_confidence: number;
   has_visual_elements: boolean;

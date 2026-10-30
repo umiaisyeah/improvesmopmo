@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { FileText, Copy, Check, Filter, Download, Search, Sparkles, CheckCircle2, ShieldCheck } from 'lucide-react';
+import { FileText, Copy, Check, Filter, Download, Search, ShieldCheck, CheckCircle2 } from 'lucide-react';
 import { RawBaplPage } from '../types';
 
 interface RawBaplViewProps {
@@ -14,11 +14,24 @@ export const RawBaplView: React.FC<RawBaplViewProps> = ({ pages, initialPage = 1
   const [searchTerm, setSearchTerm] = useState<string>(highlightText || '');
   const [copied, setCopied] = useState<boolean>(false);
   const scrollRef = React.useRef<HTMLDivElement>(null);
+  const canvasRef = React.useRef<HTMLCanvasElement>(null);
+  const fileInputRef = React.useRef<HTMLInputElement>(null);
+  const [enhancedImageUrl, setEnhancedImageUrl] = useState<string | null>(null);
+
+  const handleReupload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    // Stub for re-upload functionality
+    console.log("Re-uploading:", e.target.files?.[0]);
+  };
+
+  const handleReprocess = () => {
+    // Stub for re-process functionality
+    console.log("Reprocessing OCR...");
+  };
+
 
   // Group pages by source document
   const sources = useMemo(() => {
-    const s = Array.from(new Set(pages.map((p) => p.source || 'BAPL Utama')));
-    return s;
+    return Array.from(new Set(pages.map((p) => p.source || 'BAPL Utama')));
   }, [pages]);
 
   const filteredPages = useMemo(() => {
@@ -68,6 +81,16 @@ export const RawBaplView: React.FC<RawBaplViewProps> = ({ pages, initialPage = 1
   }, [filteredPages, selectedPageKey]);
 
   const activePage = filteredPages[activePageIdx] || pages[0];
+
+  useEffect(() => {
+    if (activePage?.imageUrl && canvasRef.current) {
+      import('../utils/imageProcessor').then(({ enhanceImageReadability }) => {
+        enhanceImageReadability(activePage.imageUrl!, canvasRef.current!).then(setEnhancedImageUrl);
+      });
+    } else {
+        setEnhancedImageUrl(null);
+    }
+  }, [activePage]);
 
   const handleCopy = () => {
     if (activePage) {
@@ -307,14 +330,42 @@ export const RawBaplView: React.FC<RawBaplViewProps> = ({ pages, initialPage = 1
               </div>
             </div>
 
-            {/* OCR Transcribed Text Box */}
-            <div 
-              ref={scrollRef}
-              className="bg-slate-950 border border-slate-800 rounded-xl p-6 font-mono text-xs text-slate-100 leading-relaxed whitespace-pre-wrap max-h-[580px] overflow-y-auto shadow-inner select-text"
-            >
-              <div data-text={activePage?.extracted_text?.toLowerCase()}>
-                {activePage?.extracted_text}
-              </div>
+            {/* Split View Content */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                {/* Visual Content (Original + Enhanced) */}
+                <div className="space-y-4">
+                  <div className="bg-slate-100 p-4 rounded-xl border border-slate-200">
+                    <div className="flex items-center justify-between mb-2">
+                        <span className="text-[10px] font-bold text-slate-500 uppercase">Scan Asli &amp; Hasil Pemrosesan</span>
+                        <div className="flex items-center gap-1">
+                            <input type="file" ref={fileInputRef} className="hidden" onChange={handleReupload} accept="image/*" />
+                            <button onClick={() => fileInputRef.current?.click()} className="text-[10px] font-semibold bg-white border border-slate-300 px-2 py-1 rounded shadow-sm hover:bg-slate-50 text-slate-700">Upload Ulang</button>
+                            <button onClick={handleReprocess} className="text-[10px] font-semibold bg-blue-600 text-white px-2 py-1 rounded shadow-sm hover:bg-blue-700">Proses OCR</button>
+                        </div>
+                    </div>
+                    {activePage?.imageUrl ? (
+                        <div className="space-y-4">
+                            <img src={enhancedImageUrl || activePage.imageUrl} alt="BAPL Scan Enhanced" className="w-full rounded border border-slate-300" />
+                            <canvas ref={canvasRef} className="hidden" />
+                        </div>
+                    ) : (
+                        <div className="flex items-center justify-center h-48 bg-slate-200 rounded text-slate-400 text-xs">Tidak ada gambar</div>
+                    )}
+                  </div>
+                </div>
+
+                {/* OCR Transcribed Text Box */}
+                <div className="space-y-2">
+                    <span className="text-[10px] font-bold text-slate-500 uppercase">Hasil Transkrip OCR</span>
+                    <div 
+                        ref={scrollRef}
+                        className="bg-slate-950 border border-slate-800 rounded-xl p-6 font-mono text-xs text-slate-100 leading-relaxed whitespace-pre-wrap max-h-[580px] overflow-y-auto shadow-inner select-text"
+                    >
+                        <div data-text={activePage?.extracted_text?.toLowerCase()}>
+                            {activePage?.extracted_text}
+                        </div>
+                    </div>
+                </div>
             </div>
           </div>
 
