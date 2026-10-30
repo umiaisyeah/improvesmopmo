@@ -220,56 +220,7 @@ export const UploadSection: React.FC<UploadSectionProps> = ({
           </div>
         </div>
 
-        {/* Program Domain & Clear Boundary Shield Banner */}
-        <div className="bg-gradient-to-r from-slate-900 via-slate-800 to-indigo-950 text-white rounded-xl p-4 shadow-xs border border-slate-700 space-y-3">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-            <div className="flex items-center gap-2">
-              <span className="p-1.5 rounded-lg bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
-                <ShieldCheck className="w-4 h-4" />
-              </span>
-              <div>
-                <span className="text-xs font-bold text-white flex items-center gap-1.5">
-                  Sistem Adaptif Multi-Program &amp; Batasan Disiplin Ketat
-                  <span className="text-[10px] font-normal px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/40">
-                    Isolasi Anti-Tercampur Aktif
-                  </span>
-                </span>
-                <p className="text-[11px] text-slate-300 mt-0.5">
-                  Engine secara dinamis membatasi pencarian: nilai ohm/uji kelistrikan tidak akan dikutip untuk dimensi tiang/pipa fisik; uji hidrostatis valve tidak akan tertukar dengan item sipil.
-                </p>
-              </div>
-            </div>
-            <div className="flex items-center gap-1.5 text-[11px] text-slate-300 shrink-0">
-              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-              <span>Siap untuk Semua Jenis Program</span>
-            </div>
-          </div>
 
-          <div className="flex flex-wrap items-center gap-1.5 pt-1 border-t border-slate-700/60">
-            <span className="text-[10px] text-slate-400 uppercase tracking-wider font-semibold mr-1">Domain Program:</span>
-            <span className="px-2.5 py-1 rounded-md text-[11px] font-medium bg-slate-800 text-teal-300 border border-teal-500/40 flex items-center gap-1">
-              🌐 Universal Multi-Disiplin
-            </span>
-            <span className="px-2 py-1 rounded-md text-[10px] text-amber-300 bg-amber-950/50 border border-amber-500/30 flex items-center gap-1">
-              ⚡ Elektrikal &amp; Grounding
-            </span>
-            <span className="px-2 py-1 rounded-md text-[10px] text-blue-300 bg-blue-950/50 border border-blue-500/30 flex items-center gap-1">
-              💧 Pemipaan &amp; Valve WTP
-            </span>
-            <span className="px-2 py-1 rounded-md text-[10px] text-emerald-300 bg-emerald-950/50 border border-emerald-500/30 flex items-center gap-1">
-              🏗️ Sipil &amp; Struktur Beton
-            </span>
-            <span className="px-2 py-1 rounded-md text-[10px] text-cyan-300 bg-cyan-950/50 border border-cyan-500/30 flex items-center gap-1">
-              ⚙️ Mekanikal &amp; HVAC
-            </span>
-            <span className="px-2 py-1 rounded-md text-[10px] text-indigo-300 bg-indigo-950/50 border border-indigo-500/30 flex items-center gap-1">
-              📡 SCADA &amp; Instrumentasi
-            </span>
-            <span className="px-2 py-1 rounded-md text-[10px] text-purple-300 bg-purple-950/50 border border-purple-500/30 flex items-center gap-1">
-              📦 Pengadaan Umum
-            </span>
-          </div>
-        </div>
 
         {/* 4 Dedicated Upload Dropzones */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
