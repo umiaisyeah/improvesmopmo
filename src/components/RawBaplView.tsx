@@ -28,6 +28,11 @@ export const RawBaplView: React.FC<RawBaplViewProps> = ({ pages, initialPage = 1
     console.log("Reprocessing OCR...");
   };
 
+  // Function to extract only the survey result section
+  const extractSurveyResult = (text: string) => {
+    const surveySectionMatch = text.match(/(?:HASIL SURVEI|SURVEY RESULT|HASIL PEMERIKSAAN)[\s\S]*?(?=\n\n|$)/i);
+    return surveySectionMatch ? surveySectionMatch[0] : text;
+  };
 
   // Group pages by source document
   const sources = useMemo(() => {
@@ -332,21 +337,15 @@ export const RawBaplView: React.FC<RawBaplViewProps> = ({ pages, initialPage = 1
 
             {/* Split View Content */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                {/* Visual Content (Original + Enhanced) */}
+                {/* Visual Content */}
                 <div className="space-y-4">
                   <div className="bg-slate-100 p-4 rounded-xl border border-slate-200">
-                    <div className="flex items-center justify-between mb-2">
-                        <span className="text-[10px] font-bold text-slate-500 uppercase">Scan Asli &amp; Hasil Pemrosesan</span>
-                        <div className="flex items-center gap-1">
-                            <input type="file" ref={fileInputRef} className="hidden" onChange={handleReupload} accept="image/*" />
-                            <button onClick={() => fileInputRef.current?.click()} className="text-[10px] font-semibold bg-white border border-slate-300 px-2 py-1 rounded shadow-sm hover:bg-slate-50 text-slate-700">Upload Ulang</button>
-                            <button onClick={handleReprocess} className="text-[10px] font-semibold bg-blue-600 text-white px-2 py-1 rounded shadow-sm hover:bg-blue-700">Proses OCR</button>
-                        </div>
-                    </div>
+                    <span className="text-[10px] font-bold text-slate-500 uppercase mb-2 block">
+                        Scan Asli Dokumen: <span className="text-blue-600 cursor-pointer hover:underline" onClick={() => window.open(activePage?.imageUrl, '_blank')}>Buka di Tab Baru</span>
+                    </span>
                     {activePage?.imageUrl ? (
                         <div className="space-y-4">
-                            <img src={enhancedImageUrl || activePage.imageUrl} alt="BAPL Scan Enhanced" className="w-full rounded border border-slate-300" />
-                            <canvas ref={canvasRef} className="hidden" />
+                            <img src={activePage.imageUrl} alt="BAPL Scan Asli" className="w-full rounded border border-slate-300" />
                         </div>
                     ) : (
                         <div className="flex items-center justify-center h-48 bg-slate-200 rounded text-slate-400 text-xs">Tidak ada gambar</div>
@@ -354,15 +353,15 @@ export const RawBaplView: React.FC<RawBaplViewProps> = ({ pages, initialPage = 1
                   </div>
                 </div>
 
-                {/* OCR Transcribed Text Box */}
+                {/* OCR Transcribed Text Box - Survey Result Only */}
                 <div className="space-y-2">
-                    <span className="text-[10px] font-bold text-slate-500 uppercase">Hasil Transkrip OCR</span>
+                    <span className="text-[10px] font-bold text-slate-500 uppercase">Hasil Transkrip OCR (Bagian Survei)</span>
                     <div 
                         ref={scrollRef}
                         className="bg-slate-950 border border-slate-800 rounded-xl p-6 font-mono text-xs text-slate-100 leading-relaxed whitespace-pre-wrap max-h-[580px] overflow-y-auto shadow-inner select-text"
                     >
-                        <div data-text={activePage?.extracted_text?.toLowerCase()}>
-                            {activePage?.extracted_text}
+                        <div>
+                            {extractSurveyResult(activePage?.extracted_text || "")}
                         </div>
                     </div>
                 </div>

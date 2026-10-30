@@ -59,10 +59,17 @@ export const UploadSection: React.FC<UploadSectionProps> = ({
   const excelInputRef = useRef<HTMLInputElement>(null);
   const supportInputRef = useRef<HTMLInputElement>(null);
 
-  // Slot 1: BAPL Files (PDF / Scan)
+  const suggestPackageName = (file: File) => {
+    const nameWithoutExt = file.name.replace(/\.[^/.]+$/, "");
+    if (packageName.startsWith('Program ')) {
+        setPackageName(nameWithoutExt);
+    }
+  };
+
   const handleAddBaplFiles = (files: FileList | null) => {
     if (!files) return;
     const newFiles = Array.from(files);
+    if (newFiles.length > 0) suggestPackageName(newFiles[0]);
     setBaplFiles((prev) => {
       const existingNames = new Set(prev.map((f) => f.name));
       const filtered = newFiles.filter((f) => !existingNames.has(f.name));
@@ -77,6 +84,7 @@ export const UploadSection: React.FC<UploadSectionProps> = ({
   const handleAddJustekFiles = (files: FileList | null) => {
     if (!files) return;
     const newFiles = Array.from(files);
+    if (newFiles.length > 0) suggestPackageName(newFiles[0]);
     setJustekFiles((prev) => {
       const existingNames = new Set(prev.map((f) => f.name));
       const filtered = newFiles.filter((f) => !existingNames.has(f.name));
